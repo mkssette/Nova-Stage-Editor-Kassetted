@@ -76,9 +76,10 @@ import funkin.data.stage.StageRegistry;
 
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
-import Math;
 
+import StringTools;
 import Reflect;
+import Math;
 
 class StageEditorTheSecond extends MusicBeatState {
 
@@ -98,6 +99,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var editPropWindow;
     var saveAsComponent;
+    var propListView;
 
     var currentStage:Stage;
 
@@ -105,6 +107,8 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var yLine;
     var xLine;
+
+    var cancelInput = false;
 
     function new() {
         super('StageEditorTheSecond');
@@ -231,6 +235,66 @@ class StageEditorTheSecond extends MusicBeatState {
         stageDataWindow.x = FlxG.width - stageDataWindow.width - 10;
         stageDataWindow.y = menuBar.height + 10;
 
+        var editPropButton = stageDataWindow.findComponent("editPropButton");
+        bind(editPropButton, MouseEvent.CLICK, ()->{
+            if (selectedProp == null) {
+                newNotification("Error!", "Please Select a Prop First.", NotificationType.Error);
+            } else {
+                cancelInput = true;
+                var propData = getSelectedPropData();
+                trace(propData);
+
+                editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropWindow"));
+                editPropWindow.screenCenter();
+                editPropWindow.title = StringTools.replace(editPropWindow.title, "$propID", '"' + propData.name + '"');
+                add(editPropWindow);
+
+                var nameTextField = editPropWindow.findComponent("editPropWindowNameTextField");
+                nameTextField.text = propData.name;
+
+                var blendModeDropdown = editPropWindow.findComponent("editPropWindowBlendModeDropdown");
+                var blends = [
+                    "" => { text: "None", data: "-1", id: "" },
+                    "add" => { text: "Add", data: "0", id: "" },
+                    "alpha" => { text: "Alpha", data: "1", id: "" },
+                    "darken" => { text: "Darken", data: "2", id: "" },
+                    "difference" => { text: "Difference", data: "3", id: "" },
+                    "erase" => { text: "Erase", data: "4", id: "" },
+                    "hardlight" => { text: "Hard Light", data: "5", id: "" },
+                    "invert" => { text: "Invert", data: "6", id: "" },
+                    "layer" => { text: "Layer", data: "7", id: "" },
+                    "lighten" => { text: "Lighten", data: "8", id: "" },
+                    "multiply" => { text: "Multiply", data: "9", id: "" },
+                    "normal" => { text: "Normal", data: "10", id: "" },
+                    "overlay" => { text: "Overlay", data: "11", id: "" },
+                    "screen" => { text: "Screen", data: "12", id: "" },
+                    "shader" => { text: "Shader", data: "13", id: "" },
+                    "subtract" => { text: "Subtract", data: "14", id: "" }
+                ];
+                var item = blends.get(propData.blend);
+                item.id = propData.blend;
+                blendModeDropdown.selectedItem = item;
+                blendModeDropdown.onChange = ()->{
+                    propData.blend = blendModeDropdown.selectedItem.id;
+                    selectedProp.blend = Std.parseInt(blendModeDropdown.selectedItem.data) != -1 ? Std.parseInt(blendModeDropdown.selectedItem.data) : null;
+                }
+
+                var editConfirmButton = editPropWindow.findComponent("editPropWindowConfirm");
+                bind(editConfirmButton, MouseEvent.CLICK, ()->{
+                    if (nameTextField.text == "") {
+                        newNotification("Error!", '"Prop Name" must not be blank.', NotificationType.Error);
+                    }
+                    if (nameTextField.text != "") {
+                        cancelInput = false;
+                        windowManager.closeWindow(editPropWindow);
+                        propData.name = nameTextField.text;
+                        selectedProp.name = propData.name;
+                        refreshPropList();
+                    }
+                });
+            }
+        });      
+
         var playerDropdown = stageDataWindow.findComponent("playerDropdown");
         var opponentDropdown = stageDataWindow.findComponent("opponentDropdown");
         var spectatorDropdown = stageDataWindow.findComponent("spectatorDropdown");
@@ -248,14 +312,14 @@ class StageEditorTheSecond extends MusicBeatState {
             trace(data);
         } */
         
-        var propListView = stageDataWindow.findComponent("propsListView");
+        propListView = stageDataWindow.findComponent("propsListView");
         var characterListView = stageDataWindow.findComponent("charactersListView");
         
-        var deselectStage = ()->{
+        var deselectStage = function(?target:Float) {
             propListView.selectedItems = [];
             selectedProp = null;
             for (i in currentStage.members) {
-                i.alpha = 1;
+                i.alpha = target ?? 1;
             }
         };
 
@@ -268,7 +332,7 @@ class StageEditorTheSecond extends MusicBeatState {
         };
 
         characterListView.onChange = ()->{
-            deselectStage();
+            deselectStage(0.5);
         }
 
         propListView.onChange = ()->{
@@ -300,11 +364,7 @@ class StageEditorTheSecond extends MusicBeatState {
                     currentStage.onCreate();
                     insert(0, currentStage);
 
-                    propListView.dataSource.clear();
-
-                    for (i in currentStage.namedProps.keys()) {
-                        propListView.dataSource.add({ text: i });
-                    }
+                    refreshPropList();
 
                     stageDataWindow.findComponent("stageNameTextField").text = stageRegistry.entries.get(i).stageName;
                     stageDataWindow.findComponent("defualtCamZoomStepper").pos = currentStage.camZoom;
@@ -318,19 +378,19 @@ class StageEditorTheSecond extends MusicBeatState {
 
         stageList.selectedItem = { text: "Main Stage" };
         
-        editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
-        editPropWindow.windowManager = windowManager;
+        /* editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
+        editPropWindow.windowManager = windowManager; */
         // add(editPropWindow);
 
         initNotification();
 
-        newKeybind(["W"], () -> camGame.scroll.y -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
-        newKeybind(["A"], () -> camGame.scroll.x -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
-        newKeybind(["S"], () -> camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
-        newKeybind(["D"], () -> camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
+        newKeybind(["W"], () -> !cancelInput ? camGame.scroll.y -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
+        newKeybind(["A"], () -> !cancelInput ? camGame.scroll.x -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
+        newKeybind(["S"], () -> !cancelInput ? camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
+        newKeybind(["D"], () -> !cancelInput ? camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
 
-        newKeybind(["Q"], () -> camGame.zoom -= 0.05, "pressed");
-        newKeybind(["E"], () -> camGame.zoom += 0.05, "pressed");
+        newKeybind(["Q"], () -> !cancelInput ? camGame.zoom -= 0.05 : 0, "pressed");
+        newKeybind(["E"], () -> !cancelInput ? camGame.zoom += 0.05 : 0, "pressed");
 
         camGame.scroll.x = -FlxG.width/2;
         camGame.scroll.y = -FlxG.height/2;
@@ -357,7 +417,8 @@ class StageEditorTheSecond extends MusicBeatState {
         super.update();        
         get_conductorInUse().update();
 
-        editPropWindow.screenCenter();
+        if (editPropWindow != null)
+            editPropWindow.screenCenter();
 
         if (FlxG.mouse.justPressed) {
             FlxG.sound.play(Paths.sound("click"));
@@ -402,13 +463,31 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
 
-        if (selectedProp != null && FlxG.mouse.pressed) {
+        if (selectedProp != null && FlxG.mouse.pressed && !cancelInput) {
             selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
             selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
             for (i in currentStage._data.props) {
                 if (i.name == selectedProp.name) {
                     i.position[0] = Math.round(selectedProp.x);
                     i.position[1] = Math.round(selectedProp.y);
+                }
+            }
+        }
+    }
+
+    function refreshPropList() {
+        propListView.dataSource.clear();
+
+        for (i in currentStage._data.props) {
+            propListView.dataSource.add({ text: i.name });
+        }
+    }
+
+    function getSelectedPropData() {
+        if (selectedProp != null) {
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    return i;
                 }
             }
         }

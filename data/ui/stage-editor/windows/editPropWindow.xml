@@ -1,12 +1,10 @@
-<window title="Simple Form" width="400" maximizable="false" minimizable="false" collapsable="false">
-    <window-title width="100%">
-    </window-title>
+<window title="Editing $propID" width="400" maximizable="false" minimizable="false" collapsable="false" closable="false">
     <grid width="100%">
         <label text="Prop Name:" style="padding: 2px;" verticalAlign="center"/>
-        <textfield  id="editPropWindowNameTextField" placeholder="Prop Name" width="100%" verticalAlign="center"/>  
+        <textfield  id="editPropWindowNameTextField" placeholder="Prop Name" width="100%" verticalAlign="center" validator="required"/>  
 
         <label text="Asset Path:" style="padding: 2px;" verticalAlign="center"/>
-        <textfield  id="editPropWindowAssetPathTextField" placeholder="Asset Path" width="100%" verticalAlign="center"/> 
+        <textfield  id="editPropWindowAssetPathTextField" placeholder="Asset Path" width="100%" verticalAlign="center" validator="required"/> 
 
         <label text="Animation Type:" style="padding: 2px;" verticalAlign="center"/>
         <option-stepper width="100%">
@@ -20,9 +18,24 @@
         <color-picker-popup id="editPropWindowColorPicker" width="100%" value="#FFFFFF"/>
 
         <label text="Blend Mode:" style="padding: 2px;" verticalAlign="center"/>
-        <dropdown id="editPropWindowBlendModeDorpdown" text="None" width="100%" searchable="true">
+        <dropdown id="editPropWindowBlendModeDropdown" text="None" width="100%" searchable="true">
             <data>
-                <item text="None"/>
+                <item text="None" data="-1" id=""/>
+                <item text="Add" data="0" id="add"/>
+                <item text="Alpha" data="1" id="alpha"/>
+                <item text="Darken" data="2" id="darken"/>
+                <item text="Difference" data="3" id="difference"/>
+                <item text="Erase" data="4" id="erase"/>
+                <item text="Hard Light" data="5" id="hardlight"/>
+                <item text="Invert" data="6" id="invert"/>
+                <item text="Layer" data="7" id="layer"/>
+                <item text="Lighten" data="8" id="lighten"/>
+                <item text="Multiply" data="9" id="multiply"/>
+                <item text="Normal" data="10" id="normal"/>
+                <item text="Overlay" data="11" id="overlay"/>
+                <item text="Screen" data="12" id="screen"/>
+                <item text="Shader" data="13" id="shader"/>
+                <item text="Subtract" data="14" id="subtract"/>
             </data>
         </dropdown>
 
@@ -65,8 +78,9 @@
         <label text="Pixel:" style="padding: 2px;" verticalAlign="center"/>
         <checkbox id="editPropWindowIsPixelCheckbox"/>
     </hbox>
+    <button id="editPropWindowAnimationsButton" text="Edit Animations" width="100%"/>
     <window-footer width="100%">
-            <spacer width="100%" />
-            <button text="Confirm" />
-        </window-footer>
+        <spacer width="100%" />
+        <button text="Confirm" id="editPropWindowConfirm" />
+    </window-footer>
 </window>
