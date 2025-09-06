@@ -26,8 +26,13 @@
     <vbox width="100%">
         <label text="Props:" style="padding: 2px;" verticalAlign="center"/>
         <listview id="propsListView" width="100%" height="180" selectedIndex="0">
+            <!-- <item-renderer width="100%" layout="horizontal">
+               <label id="text" width="100%" verticalAlign="center" />
+               <button id="theButton" iconPosition="center" width="30" height="30" icon="assets/images/icons/icon-bf.png" style="filter: tint(#FFFF00, 100);"/>
+               <button id="theDeleteButton" text="Delete" width="30" />
+           </item-renderer> -->
             <data>
-                <!-- <item text="Prop 1"/> -->
+                <item text="Test"/>
             </data>
         </listview>
     </vbox>

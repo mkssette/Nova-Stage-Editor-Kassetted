@@ -100,6 +100,8 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var currentStage:Stage;
 
+    var selectedProp;
+
     var yLine;
     var xLine;
 
@@ -238,6 +240,52 @@ class StageEditorTheSecond extends MusicBeatState {
         var stageList = stageDataWindow.findComponent("stageDropdown");
         for (i in stageNameList) stageList.dataSource.add({text: i});
 
+        /* var propListView = stageDataWindow.findComponent("propsListView");
+        propListView.onDataChanged = (data) -> {
+            trace(data);
+        } */
+        
+        var propListView = stageDataWindow.findComponent("propsListView");
+        var characterListView = stageDataWindow.findComponent("charactersListView");
+        
+        var deselectStage = ()->{
+            propListView.selectedItems = [];
+            selectedProp = null;
+            for (i in currentStage.members) {
+                i.alpha = 1;
+            }
+        };
+
+        var deselectChars = ()->{
+            characterListView.selectedItems = [];
+            /* selectedProp = null;
+            for (i in currentStage.members) {
+                i.alpha = 1;
+            } */
+        };
+
+        characterListView.onChange = ()->{
+            deselectStage();
+        }
+
+        propListView.onChange = ()->{
+            xLine.scrollFactor.y = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.y;
+            yLine.scrollFactor.x = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.x;
+            selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
+
+            for (i in currentStage.members) {
+                if (i != currentStage.getNamedProp(propListView.selectedItem.text)) {
+                    i.alpha = 0.5;
+                } else {
+                    i.alpha = 1;
+                }
+            }
+            deselectChars();
+        }
+
+        newKeybind(["ESCAPE"], deselectStage);
+        newKeybind(["ESCAPE"], deselectChars);
+
         stageList.onChange = ()->{
             for (i in stageRegistry.entries.keys()) {
                 if (stageRegistry.entries.get(i).stageName == stageList.selectedItem.text) {
@@ -249,7 +297,6 @@ class StageEditorTheSecond extends MusicBeatState {
                     currentStage.onCreate();
                     insert(0, currentStage);
 
-                    var propListView = stageDataWindow.findComponent("propsListView");
                     propListView.dataSource.clear();
 
                     for (i in currentStage.namedProps.keys()) {
@@ -260,7 +307,8 @@ class StageEditorTheSecond extends MusicBeatState {
                     stageDataWindow.findComponent("defualtCamZoomStepper").pos = currentStage.camZoom;
                     FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
                     FlxTween.tween(camGame.scroll, { x: -FlxG.width/2, y: -FlxG.height/2 }, 0.25, { ease: FlxEase.quartOut });
-                    
+                    deselectStage();
+                    deselectChars();
                 }
             }
         }
@@ -281,6 +329,9 @@ class StageEditorTheSecond extends MusicBeatState {
         newKeybind(["Q"], () -> camGame.zoom -= 0.05, "pressed");
         newKeybind(["E"], () -> camGame.zoom += 0.05, "pressed");
 
+        camGame.scroll.x = -FlxG.width/2;
+        camGame.scroll.y = -FlxG.height/2;
+
         
         yLine = new FunkinSprite(0, 0).makeGraphic(1, 1, 0xFF00FF00);
         yLine.scale.y = 2000;
@@ -294,6 +345,10 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.cameras = [camGame];
         xLine.alpha = 0.5;
         add(xLine);
+
+        
+
+
     }
 
     var targetSpriteY = 0;
@@ -336,13 +391,15 @@ class StageEditorTheSecond extends MusicBeatState {
         yLine.scale.x = 1.5 * (1/camGame.zoom);
         yLine.scale.y = FlxG.height * (1/camGame.zoom);
         yLine.screenCenter();
-        yLine.x = 0;
+        yLine.updateHitbox();
+        yLine.x = -yLine.width/2;
         yLine.scrollFactor.y = 0;
 
         xLine.scale.y = 1.5 * (1/camGame.zoom);
         xLine.scale.x = FlxG.width * (1/camGame.zoom);
         xLine.screenCenter();
-        xLine.y = 0;
+        xLine.updateHitbox();
+        xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
     }
 
