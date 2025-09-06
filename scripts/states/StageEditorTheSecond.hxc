@@ -1,6 +1,10 @@
 import funkin.ui.MusicBeatState;
 
+import funkin.play.stage.Stage;
+
 import haxe.ui.RuntimeComponentBuilder;
+
+import flixel.FlxCamera;
 
 import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
@@ -70,6 +74,9 @@ import funkin.util.SortUtil;
 
 import funkin.data.stage.StageRegistry;
 
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+
 import Reflect;
 
 class StageEditorTheSecond extends MusicBeatState {
@@ -84,16 +91,17 @@ class StageEditorTheSecond extends MusicBeatState {
     var notificationManager = new NotificationManager();
 	var windowManager = new WindowManager();
 
-    var targetSprite:FunkinSprite = null;
-
-    var transformSprites = {
-        centerCircle: null,
-        rightCircle: null,
-        outline: null
-    }
+	var camHUD:FlxCamera;
+	var camGame:FlxCamera;
+    var camBackground:FlxCamera;
 
     var editPropWindow;
     var saveAsComponent;
+
+    var currentStage:Stage;
+
+    var yLine;
+    var xLine;
 
     function new() {
         super('StageEditorTheSecond');
@@ -102,7 +110,20 @@ class StageEditorTheSecond extends MusicBeatState {
     function create() {
         super.create();
         Cursor.show();
+
 		var chartEditor = new ChartEditorState();
+
+        camBackground = new FlxCamera();
+        camBackground.bgColor = 0xFF000000;
+        FlxG.cameras.add(camBackground, false);
+
+        camGame = new FlxCamera();
+        camGame.bgColor = 0x00000000;
+        FlxG.cameras.add(camGame, false);
+
+        camHUD = new FlxCamera();
+        camHUD.bgColor = 0x00000000;
+        FlxG.cameras.add(camHUD, true);
 
         for (i in PolymodHandler.getAllMods()) {
             if (i.title == editorTitle) {
@@ -119,10 +140,41 @@ class StageEditorTheSecond extends MusicBeatState {
         var stageRegistry = new StageRegistry();
         stageRegistry.loadEntries();
 
+        var blacklist = [
+            "Main Stage [Erect]",
+            
+            "Spooky Mansion",
+            "Spooky Mansion [Erect]",
+            
+            "Christmas Mall (Nice)", 
+            "Christmas Mall (Naughty)", 
+            "Christmas Mall (Nice) [Erect]", 
+            
+            "Limo Ride", 
+            "Limo Ride [Erect]", 
+            
+            "Philly (Train)",
+            "Philly (Blazin')", 
+            "Philly (Streets)", 
+            "Philly (Train) [Erect]",
+            "Philly (Streets) [Erect]",
+            
+            "School (Date)",
+            "School (Hate)",
+            "School (Date) [Pico]",
+            "School (Date) [Erect]",
+            "School (Hate) [Erect]",
+
+            "Tankman Battlefield",
+            "Tankman Battlefield [Erect]"
+        ];
         var stageNameList = [];
+        
         for (i in stageRegistry.entries.keys()) {
-            stageIdList.push(i);
-            stageNameList.push(stageRegistry.entries.get(i).stageName);
+            if (!blacklist.contains(stageRegistry.entries.get(i).stageName)) {
+                stageIdList.push(i);
+                stageNameList.push(stageRegistry.entries.get(i).stageName);
+            }
         }
         stageNameList.sort(SortUtil.alphabetically);
         stageIdList.sort(SortUtil.alphabetically);
@@ -134,50 +186,36 @@ class StageEditorTheSecond extends MusicBeatState {
 		bg.updateHitbox();
 		bg.screenCenter();
 		bg.alpha = 0.25;
-		// bg.cameras = [camBackground];
+		bg.cameras = [camBackground];
 		add(bg);
 
-        /* var iconTest = new FunkinSprite(0, 100).loadGraphic(Paths.image("icons/icon-bf"));
-        add(iconTest);
-        targetSprite = iconTest;
-
-        var outline:FlxShapeBox = new FlxShapeBox(targetSprite.x, targetSprite.y, targetSprite.width, targetSprite.height, {
-            thickness: 2,
-            color: 0xFFFFFFFF
-        }, 0x00000000); // Green filled circle
-        transformSprites.outline = outline;
-        add(outline);
-
-        var circle:FlxShapeCircle = new FlxShapeCircle(100, 100, 7.5, {
-            thickness: 2,
-            color: 0xFFFFFFFF
-        }, 0x88000000); // Green filled circle
-        transformSprites.centerCircle = circle;
-        add(circle);
-
-        var circle:FlxShapeCircle = new FlxShapeCircle(100, 100, 7.5, {
-            thickness: 2,
-            color: 0xFFFFFFFF
-        }, 0x88000000); // Green filled circle
-        transformSprites.rightCircle = circle;
-        add(circle); */
-
         var menuBar = RuntimeComponentBuilder.build(Paths.ui("stage-editor/menubar"));
+
+        var resetCamera = menuBar.findComponent("resetCamera");
+
+        resetCameraCallback = () -> FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
+
+        bind(resetCamera, MouseEvent.CLICK, resetCameraCallback);
+        newKeybind(["CONTROL", "SHIFT", "R"], resetCameraCallback);
+
         add(menuBar);
 
         var exit = ()->{
             FlxG.switchState(new MainMenuState());
-            //PolymodHandler.forceReloadAssets();
 		}
+
         var exitToMenuItem = menuBar.findComponent("exitToMenu");
         exitToMenuItem.onClick = exit;
         newKeybind(["CONTROL", "Q"], exit);
 
         saveAsComponent = menuBar.findComponent("saveStageAs");
-        bind(saveAsComponent, MouseEvent.CLICK, test);
+        //bind(saveAsComponent, MouseEvent.CLICK, test);
 
         var saveStageComponent = menuBar.findComponent("saveStage");
-        saveStageComponent.onClick = ()->{}
+        var saveStageCallback = ()->{}
+        //saveStageComponent.onClick = saveStageCallback;
+        bind(saveStageComponent, MouseEvent.CLICK, saveStageCallback);
+        newKeybind(["CONTROL", "S"], saveStageCallback);
 
         var stageDataWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/stageDataWindow"));
         stageDataWindow.screenCenter();
@@ -199,13 +237,63 @@ class StageEditorTheSecond extends MusicBeatState {
 
         var stageList = stageDataWindow.findComponent("stageDropdown");
         for (i in stageNameList) stageList.dataSource.add({text: i});
+
+        stageList.onChange = ()->{
+            for (i in stageRegistry.entries.keys()) {
+                if (stageRegistry.entries.get(i).stageName == stageList.selectedItem.text) {
+                    if (members.contains(currentStage)) {
+                            remove(currentStage);
+                    }
+                    currentStage = new Stage(i);
+                    currentStage._cameras = [camGame];
+                    currentStage.onCreate();
+                    insert(0, currentStage);
+
+                    var propListView = stageDataWindow.findComponent("propsListView");
+                    propListView.dataSource.clear();
+
+                    for (i in currentStage.namedProps.keys()) {
+                        propListView.dataSource.add({ text: i });
+                    }
+
+                    stageDataWindow.findComponent("stageNameTextField").text = stageRegistry.entries.get(i).stageName;
+                    stageDataWindow.findComponent("defualtCamZoomStepper").pos = currentStage.camZoom;
+                    FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
+                    FlxTween.tween(camGame.scroll, { x: -FlxG.width/2, y: -FlxG.height/2 }, 0.25, { ease: FlxEase.quartOut });
+                    
+                }
+            }
+        }
+
+        stageList.selectedItem = { text: "Main Stage" };
         
         editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
         editPropWindow.windowManager = windowManager;
-        add(editPropWindow);
+        // add(editPropWindow);
 
         initNotification();
 
+        newKeybind(["W"], () -> camGame.scroll.y -= FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
+        newKeybind(["A"], () -> camGame.scroll.x -= FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
+        newKeybind(["S"], () -> camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
+        newKeybind(["D"], () -> camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
+
+        newKeybind(["Q"], () -> camGame.zoom -= 0.05, "pressed");
+        newKeybind(["E"], () -> camGame.zoom += 0.05, "pressed");
+
+        
+        yLine = new FunkinSprite(0, 0).makeGraphic(1, 1, 0xFF00FF00);
+        yLine.scale.y = 2000;
+        yLine.antialiasing = true;
+        yLine.cameras = [camGame];
+        yLine.alpha = 0.5;
+        add(yLine);
+
+        xLine = new FunkinSprite(0, 0).makeGraphic(1, 1, 0xFFFF0000);
+        xLine.antialiasing = true;
+        xLine.cameras = [camGame];
+        xLine.alpha = 0.5;
+        add(xLine);
     }
 
     var targetSpriteY = 0;
@@ -216,45 +304,6 @@ class StageEditorTheSecond extends MusicBeatState {
 
         editPropWindow.screenCenter();
 
-        if (targetSprite != null) {
-
-            transformSprites.rightCircle.x += FlxG.mouse.deltaX;
-            transformSprites.rightCircle.y += FlxG.mouse.deltaY;
-            
-            transformSprites.centerCircle.x += FlxG.mouse.deltaX;
-            transformSprites.centerCircle.y += FlxG.mouse.deltaY;
-            if (FlxG.mouse.overlaps(transformSprites.centerCircle) && FlxG.mouse.pressed) {
-                targetSprite.x += FlxG.mouse.deltaX;
-                targetSprite.y += FlxG.mouse.deltaY;
-            }
-
-            if (FlxG.mouse.overlaps(transformSprites.rightCircle) && FlxG.mouse.justPressed) {
-                targetSpriteY = targetSprite.y + targetSprite.height;
-            }
-            
-            if (FlxG.mouse.overlaps(transformSprites.rightCircle) && FlxG.mouse.pressed) {
-                targetSprite.scale.x += FlxG.mouse.deltaX/300;
-                targetSprite.scale.y -= FlxG.mouse.deltaY/150;
-                targetSprite.y = targetSpriteY - targetSprite.height;
-            }
-            targetSprite.updateHitbox();
-
-            transformSprites.centerCircle.x = targetSprite.x + (targetSprite.width/2) - (transformSprites.centerCircle.width/2);
-            transformSprites.centerCircle.y = targetSprite.y + (targetSprite.height/2) - (transformSprites.centerCircle.height/2);
-
-            transformSprites.outline.scale.x = targetSprite.scale.x;
-            transformSprites.outline.scale.y = targetSprite.scale.y;
-
-            transformSprites.outline.x = targetSprite.x;
-            transformSprites.outline.y = targetSprite.y;
-
-            transformSprites.outline.updateHitbox();
-
-
-            transformSprites.rightCircle.x = targetSprite.x + targetSprite.width - (transformSprites.rightCircle.width/2);
-            transformSprites.rightCircle.y = targetSprite.y - (transformSprites.rightCircle.height/2);
-        }
-
         if (FlxG.mouse.justPressed) {
             FlxG.sound.play(Paths.sound("click"));
         }
@@ -262,8 +311,9 @@ class StageEditorTheSecond extends MusicBeatState {
         for (keybind in keybinds) {
             var pressed = true;
             var index = 0;
+            //trace(keybind);
             for (key in keybind.keys) {
-                if (index == keybind.keys.length - 1) {
+                if (index == keybind.keys.length - 1 && keybind.type != "pressed") {
                     if (!Reflect.getProperty(FlxG.keys.justPressed, key)) {
                         pressed = false;
                     }
@@ -278,6 +328,22 @@ class StageEditorTheSecond extends MusicBeatState {
                 keybind.action();
             }
         }
+
+        if (camGame.zoom < 0.01) {
+            camGame.zoom = 0.01;
+        }
+
+        yLine.scale.x = 1.5 * (1/camGame.zoom);
+        yLine.scale.y = FlxG.height * (1/camGame.zoom);
+        yLine.screenCenter();
+        yLine.x = 0;
+        yLine.scrollFactor.y = 0;
+
+        xLine.scale.y = 1.5 * (1/camGame.zoom);
+        xLine.scale.x = FlxG.width * (1/camGame.zoom);
+        xLine.screenCenter();
+        xLine.y = 0;
+        xLine.scrollFactor.x = 0;
     }
 
     override function beatHit() {
@@ -330,9 +396,10 @@ class StageEditorTheSecond extends MusicBeatState {
         }
     }
 
-    function newKeybind(keys:Array<String>, action) {
+    function newKeybind(keys:Array<String>, action, ?type) {
         keybinds.push({
             keys: keys,
+            type: type ?? "justPressed",
             action: action
         });
     }

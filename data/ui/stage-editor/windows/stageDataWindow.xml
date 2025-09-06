@@ -27,7 +27,7 @@
         <label text="Props:" style="padding: 2px;" verticalAlign="center"/>
         <listview id="propsListView" width="100%" height="180" selectedIndex="0">
             <data>
-                <item text="Prop 1"/>
+                <!-- <item text="Prop 1"/> -->
             </data>
         </listview>
     </vbox>

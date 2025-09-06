@@ -22,7 +22,9 @@
     <!-- <menuoptionbox id="songDataWindow" text="Song Data" /> -->
   </menu>
 
-  <menu text="View">
+  <menu text="View" width="300">
+    <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
+    <menu-separator />
     <menu-item id="viewFromPlayer" text="View Stage From Player" />
     <menu-item id="viewFromOpponent" text="View Stage From Opponent" />
     <menu-item id="viewFromSpectator" text="View Stage From Spectator" />

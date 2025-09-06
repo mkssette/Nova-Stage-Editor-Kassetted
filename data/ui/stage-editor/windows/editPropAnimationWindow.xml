@@ -1,6 +1,4 @@
-<window title="Simple Form" width="600" height="600" maximizable="false" minimizable="false" collapsable="false">
-    <window-title width="600">
-    </window-title>
+<window width="600" height="600" maximizable="false" minimizable="false" collapsable="false">
     <accordion id="ac1" width="100%" height="100%">
         <vbox id="Anim1" text="Animation 1" width="100%" style="padding: 0px;">
             <scrollview width="100%" height="100%" contentWidth="100%">
