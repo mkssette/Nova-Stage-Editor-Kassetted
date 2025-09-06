@@ -7,10 +7,11 @@
         <textfield  id="editPropWindowAssetPathTextField" placeholder="Asset Path" width="100%" verticalAlign="center" validator="required"/> 
 
         <label text="Animation Type:" style="padding: 2px;" verticalAlign="center"/>
-        <option-stepper width="100%">
+        <option-stepper width="100%" id="editPropWindowAnimationStepper">
             <data>
-                <item text="Sparrow" />
-                <item text="Multisparrow" />
+                <item text="Sparrow" data="sparrow"/>
+                <item text="Multi-Sparrow" data="multisparrow" />
+                <item text="Texture Atlas" data="textureatlas" />
             </data>
         </option-stepper>
 

@@ -25,7 +25,7 @@
                     <label text="Freame Rate:" style="padding: 2px;" verticalAlign="center"/>
                     <number-stepper id="editAnimWindowAnimFarameRateStepper" min="0" pos="24" step="1" width="100%" verticalAlign="center" tooltip="Frame Rate of your animation. Default is 24."/>
                 </grid>
-                 <hbox width="100%" style="padding: 10px;">
+                <hbox width="100%" style="padding: 10px;">
                     <spacer width="50%"/>
                     <label text="Flip X:" style="padding: 2px;" verticalAlign="center"/>
                     <checkbox id="editPropWindowFlipXCheckbox"/>
@@ -40,9 +40,9 @@
         </vbox>   
     </accordion>
     <window-footer width="100%">
-            <button text="New Animation" />   
-            <button text="Delete Animation" />   
-            <spacer width="100%" />
-            <button text="Confirm" />
-        </window-footer>
+        <button text="New Animation" />   
+        <button text="Delete Animation" />   
+        <spacer width="100%" />
+        <button text="Confirm" />
+    </window-footer>
 </window>

@@ -49,5 +49,5 @@
   </menu>
 
   <spacer width="100%" />
-  <label text="Nova Stage Editor v2.0" verticalAlign="center" />
+  <label text="" verticalAlign="center" id="menuBarTitle" />
 </menubar>
