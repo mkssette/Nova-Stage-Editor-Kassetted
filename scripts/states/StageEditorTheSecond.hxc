@@ -99,7 +99,9 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var editPropWindow;
     var saveAsComponent;
+    
     var propListView;
+    var characterListView;
 
     var currentStage:Stage;
 
@@ -109,6 +111,9 @@ class StageEditorTheSecond extends MusicBeatState {
     var xLine;
 
     var cancelInput = false;
+
+    var deselectStage;
+    var deselectChars;
 
     function new() {
         super('StageEditorTheSecond');
@@ -247,10 +252,14 @@ class StageEditorTheSecond extends MusicBeatState {
                 editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropWindow"));
                 editPropWindow.screenCenter();
                 editPropWindow.title = StringTools.replace(editPropWindow.title, "$propID", '"' + propData.name + '"');
+                editPropWindow.windowManager = windowManager;
                 add(editPropWindow);
 
                 var nameTextField = editPropWindow.findComponent("editPropWindowNameTextField");
                 nameTextField.text = propData.name;
+
+                var assetPathTextField = editPropWindow.findComponent("editPropWindowAssetPathTextField");
+                assetPathTextField.text = propData.assetPath;
 
                 var blendModeDropdown = editPropWindow.findComponent("editPropWindowBlendModeDropdown");
                 var blends = [
@@ -288,7 +297,13 @@ class StageEditorTheSecond extends MusicBeatState {
                         cancelInput = false;
                         windowManager.closeWindow(editPropWindow);
                         propData.name = nameTextField.text;
-                        selectedProp.name = propData.name;
+                        propData.assetPath = assetPathTextField.text;
+                        for (i in currentStage.members) {
+                            currentStage.remove(i);
+                        }
+                        currentStage.buildStage();
+                        deselectStage();
+                        deselectChars();
                         refreshPropList();
                     }
                 });
@@ -313,9 +328,9 @@ class StageEditorTheSecond extends MusicBeatState {
         } */
         
         propListView = stageDataWindow.findComponent("propsListView");
-        var characterListView = stageDataWindow.findComponent("charactersListView");
-        
-        var deselectStage = function(?target:Float) {
+        characterListView = stageDataWindow.findComponent("charactersListView");
+
+        deselectStage = function(?target:Float) {
             propListView.selectedItems = [];
             selectedProp = null;
             for (i in currentStage.members) {
@@ -323,7 +338,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         };
 
-        var deselectChars = ()->{
+        deselectChars = ()->{
             characterListView.selectedItems = [];
             /* selectedProp = null;
             for (i in currentStage.members) {
@@ -416,6 +431,9 @@ class StageEditorTheSecond extends MusicBeatState {
     function update() {
         super.update();        
         get_conductorInUse().update();
+
+        propListView.disabled = cancelInput;
+        characterListView.disabled = cancelInput;
 
         if (editPropWindow != null)
             editPropWindow.screenCenter();
