@@ -76,6 +76,7 @@ import funkin.data.stage.StageRegistry;
 
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
+import Math;
 
 import Reflect;
 
@@ -214,7 +215,9 @@ class StageEditorTheSecond extends MusicBeatState {
         //bind(saveAsComponent, MouseEvent.CLICK, test);
 
         var saveStageComponent = menuBar.findComponent("saveStage");
-        var saveStageCallback = ()->{}
+        var saveStageCallback = ()->{
+            trace(currentStage._data.serialize());
+        }
         //saveStageComponent.onClick = saveStageCallback;
         bind(saveStageComponent, MouseEvent.CLICK, saveStageCallback);
         newKeybind(["CONTROL", "S"], saveStageCallback);
@@ -269,8 +272,8 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         propListView.onChange = ()->{
-            xLine.scrollFactor.y = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.y;
-            yLine.scrollFactor.x = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.x;
+            /* xLine.scrollFactor.y = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.y;
+            yLine.scrollFactor.x = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.x; */
             selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
 
             for (i in currentStage.members) {
@@ -321,10 +324,10 @@ class StageEditorTheSecond extends MusicBeatState {
 
         initNotification();
 
-        newKeybind(["W"], () -> camGame.scroll.y -= FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
-        newKeybind(["A"], () -> camGame.scroll.x -= FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
-        newKeybind(["S"], () -> camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
-        newKeybind(["D"], () -> camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : FlxG.keys.pressed.CONTROL ? 1 : 5, "pressed");
+        newKeybind(["W"], () -> camGame.scroll.y -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
+        newKeybind(["A"], () -> camGame.scroll.x -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
+        newKeybind(["S"], () -> camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
+        newKeybind(["D"], () -> camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0, "pressed");
 
         newKeybind(["Q"], () -> camGame.zoom -= 0.05, "pressed");
         newKeybind(["E"], () -> camGame.zoom += 0.05, "pressed");
@@ -345,9 +348,6 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.cameras = [camGame];
         xLine.alpha = 0.5;
         add(xLine);
-
-        
-
 
     }
 
@@ -401,6 +401,17 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.updateHitbox();
         xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
+
+        if (selectedProp != null && FlxG.mouse.pressed) {
+            selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+            selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    i.position[0] = Math.round(selectedProp.x);
+                    i.position[1] = Math.round(selectedProp.y);
+                }
+            }
+        }
     }
 
     override function beatHit() {
