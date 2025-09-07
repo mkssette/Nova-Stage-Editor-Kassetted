@@ -107,6 +107,8 @@ class StageEditorTheSecond extends MusicBeatState {
     var opponent;
     var spectator;
 
+    var menuBar;
+
     var stageIdList = [];
 
     var editorVersion = "2.0.0";
@@ -237,7 +239,7 @@ class StageEditorTheSecond extends MusicBeatState {
 		bg.cameras = [camBackground];
 		add(bg);
 
-        var menuBar = RuntimeComponentBuilder.build(Paths.ui("stage-editor/menubar"));
+        menuBar = RuntimeComponentBuilder.build(Paths.ui("stage-editor/menubar"));
         menuBar.findComponent("menuBarTitle").text = editorTitle + " v" + editorVersion;
 
         var resetCamera = menuBar.findComponent("resetCamera");
@@ -1222,6 +1224,9 @@ class StageEditorTheSecond extends MusicBeatState {
         characterListView.disabled = cancelInput;
         stageList.disabled = cancelInput; */
         stageDataWindow.disabled = cancelInput;
+
+        if (menuBar != null)
+            menuBar.disabled = cancelInput;
 
         if (editCharacterWindow != null)
             editCharacterWindow.screenCenter();
