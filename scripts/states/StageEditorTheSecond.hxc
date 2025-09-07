@@ -669,6 +669,7 @@ class StageEditorTheSecond extends MusicBeatState {
                         deselectStage();
                         deselectChars();
                         refreshPropList();
+                        resetChars();
                         editAnimToggle = false;
                         FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
                     }
@@ -747,20 +748,11 @@ class StageEditorTheSecond extends MusicBeatState {
             for (i in currentStage.members) {
                 var isProp = false;
                 for (prop in currentStage._data.props) {
-                    if (prop.name == i.name)
+                    if (prop?.name == i?.name)
                         isProp = true;
                 }
                 if (isProp)
                     i.alpha = target ?? currentStage._data.props[index].alpha ?? 1;
-
-                if (player != null)
-                    player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
-
-                if (opponent != null)
-                    opponent.alpha = (opponent._data.alpha ?? 1) * (target ?? 1);
-
-                if (spectator != null)
-                    spectator.alpha = (spectator._data.alpha ?? 1) * (target ?? 1);
 
                 index++;
             }
@@ -770,6 +762,15 @@ class StageEditorTheSecond extends MusicBeatState {
             characterListView.selectedItems = [];
             selectedChar = null;
             selectedCharType = "none";
+
+            if (player != null) 
+                player.alpha = player._data.alpha ?? 1;
+
+            if (opponent != null)
+                opponent.alpha = opponent._data.alpha ?? 1;
+
+            if (spectator != null)
+                spectator.alpha = spectator._data.alpha ?? 1;
             /* selectedProp = null;
             for (i in currentStage.members) {
                 i.alpha = 1;
