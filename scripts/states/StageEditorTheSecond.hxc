@@ -300,11 +300,18 @@ class StageEditorTheSecond extends MusicBeatState {
 
         // nwords <3
 
-        var userGuideCallback = ()->{ 
+        var userGuideCallback = ()->{
+            if (cancelInput) return;
             userGuideWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/userGuideWindow"));
             userGuideWindow.windowManager = windowManager;
             add(userGuideWindow);
             userGuideWindow.screenCenter();
+            cancelInput = true;
+
+            userGuideWindow.findComponent("closeButton").onClick = ()->{
+                windowManager.closeWindow(userGuideWindow);
+                cancelInput = false;
+            }
         }
 
         newKeybind(["F1"], userGuideCallback, "justPressed");

@@ -1,6 +1,5 @@
 <window title="Prop Animations" width="500" height="600" maximizable="false" minimizable="false" collapsable="false" closable="false">
-    <accordion id="ac1" width="100%" height="100%">
-    </accordion>
+    <accordion id="ac1" width="100%" height="100%"/>
     <window-footer width="100%">
         <button text="New Animation" id="newAnimation"/>   
         <button text="Delete Animation" id="deleteAnimation"/>   

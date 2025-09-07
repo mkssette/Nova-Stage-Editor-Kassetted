@@ -12,8 +12,8 @@
     <menu-separator />
     <menu-item id="saveStage" text="Save" shortcutText="Ctrl + S"/>
     <menu-item id="saveStageAs" text="Save As" shortcutText="Ctrl + Shift + S" />
-    <menu-item id="saveStageForPsych" text="Save For Psych (Coming Soon)" disabled="true"/>
-    <menu-item id="saveStageForCNE" text="Save For Codename Engine (Coming Soon)" disabled="true"/>
+    <menu-item id="saveStageForPsych" text="Save For Psych" shortcutText="(Coming Soon)" disabled="true"/>
+    <menu-item id="saveStageForCNE" text="Save For Codename Engine" shortcutText="(Coming Soon)" disabled="true"/>
     <menu-separator />
     <menu-item id="exitToMenu" text="Exit To Menu" shortcutText="Ctrl + Q" />
   </menu>
@@ -24,12 +24,12 @@
   <menu text="View" width="300">
     <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
     <menu-separator />
-    <menu-item id="viewFromPlayer" text="View Stage From Player" />
-    <menu-item id="viewFromOpponent" text="View Stage From Opponent" />
-    <menu-item id="viewFromSpectator" text="View Stage From Spectator" />
+    <menu-item id="viewFromPlayer" text="View Stage From Player" shortcutText="(Coming Soon)" disabled="true" />
+    <menu-item id="viewFromOpponent" text="View Stage From Opponent" shortcutText="(Coming Soon)" disabled="true" />
+    <menu-item id="viewFromSpectator" text="View Stage From Spectator" shortcutText="(Coming Soon)" disabled="true" />
   </menu>
 
-  <menu text="Audio">
+  <menu text="Audio" width="300">
     <menu text="Editor Music" id="musicMenu">
     </menu>
     <vbox width="100%" style="padding: 12px;">
@@ -40,10 +40,10 @@
     </vbox>
   </menu>
 
-  <menu text="Help">
+  <menu text="Help" width="300">
     <menu-item id="userGuide" text="User Guide" shortcutText="F1" />
-    <menu-item id="checkForUpdates" text="Check for Updates (Coming Soon)" disabled="true" />
-    <menu-item id="redownloadEditor" text="Re-Download Editor (Coming Soon)" disabled="true" />
+    <menu-item id="checkForUpdates" text="Check for Updates" shortcutText="(Coming Soon)" disabled="true" />
+    <menu-item id="redownloadEditor" text="Re-Download Editor" shortcutText="(Coming Soon)" disabled="true" />
   </menu>
 
   <spacer width="100%" />

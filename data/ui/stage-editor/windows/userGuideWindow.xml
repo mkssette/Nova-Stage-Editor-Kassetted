@@ -1,33 +1,56 @@
-<window title="User Guide" width="500" height="600" maximizable="false" minimizable="false" collapsable="false" closable="true">
+<window title="User Guide" width="500" height="600" maximizable="false" minimizable="false" collapsable="false" closable="false">
     <tabview id="tv2" width="100%" height="100%">
         <box text="Guide">
-            <label text="I am NOT doing this rn lmaoooo" style="padding: 2px;" verticalAlign="center"/>
-
-            <link text="genzu" onclick="https://www.youtube.com/@_genzu"/>
-
+            <label text="Try again later." style="padding: 2px;" verticalAlign="center"/>
         </box>
 
         <box text="Keybinds">
-            <tableview width="450" height="465" contentWidth="100%">
+            <tableview width="450" height="445" contentWidth="100%">
                 <header width="100%">
-                    <column id="action" text="Action" width="50%" />
-                    <column id="keybind" text="Keybind" width="50%" />
+                    <column id="action" text="Action" width="50%"/>
+                    <column id="keybind" text="Keybind" width="50%"/>
                 </header>
                 <data>
-                    <item action="Show User Guide" keybind="F1" />
+                    <item action="Show User Guide" keybind="F1"/>
+
+                    <item action="New Stage" keybind="Ctrl + N"/>
+                    <item action="Save Stage" keybind="Ctrl + S"/>
+                    <item action="Save Stage As" keybind="Ctrl + Shift + S"/>
+                    <item action="Exit To Menu" keybind="Ctrl + Q"/>
+                    
+                    <item action="Set Zoom to Stage Zoom" keybind="Ctrl + Shift + R"/>
+
+                    <item action="Move Camera" keybind="W, A, S, D"/>
+                    <item action="Zoom Camera" keybind="Q, E"/>
+
+                    <item action="Deselect Prop/Character" keybind="Esc"/>
+                    <item action="Deleted Selected Prop" keybind="Del"/>
+                    <item action="Move Selected Prop/Character" keybind="Left Click + Drag"/>
+
                 </data>
             </tableview>
         </box>
 
         <box text="Credits">
+            <tableview width="450" height="445" contentWidth="100%">
+                <header width="100%">
+                    <column id="action" text="Name" width="50%"/>
+                    <column id="keybind" text="Role" width="50%"/>
+                </header>
+                <data>
+                    <item action="Nebula S. Nova" keybind="Main Coder, Lofi Freaky Menu"/>
+                    <item action="GENZU" keybind="Coded The UI"/>
+                </data>
+            </tableview>
         </box>
         
         <box text="To-Do">
-            
+            <label text="—— To Be Added ——\n\n• To-Do Tab."/>
         </box>
 
     </tabview>
     <window-footer width="100%">
-        <spacer width="100%" />
+        <spacer width="100%"/>
+        <button id="closeButton" text="Close"/>
     </window-footer>
 </window>
