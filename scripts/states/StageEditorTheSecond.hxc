@@ -991,7 +991,7 @@ class StageEditorTheSecond extends MusicBeatState {
             angleStepper = editCharacterWindow.findComponent("editCharacterWindowAngleStepper");
             angleStepper.pos = getCharData().angle;
             angleStepper.onChange = ()->{
-                getCharData().alpha = angleStepper.pos;
+                getCharData().angle = angleStepper.pos;
                 resetChars();
             }
 
@@ -1347,6 +1347,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 currentStage.characters.set('bf', player);
                 currentStage.add(player);
             }
+
+            player.playAnimation(player._data.animations[0].name);
+            player.animation.finish();
         }
         if (opponent != null) {
             opponent.zIndex = currentStage._data.characters.dad.zIndex;
@@ -1369,6 +1372,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 currentStage.characters.set('dad', opponent);
                 currentStage.add(opponent);
             }
+
+            opponent.playAnimation(opponent._data.animations[0].name);
+            opponent.animation.finish();
         }
 
         if (spectator != null) {
@@ -1392,6 +1398,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 currentStage.characters.set('gf', spectator);
                 currentStage.add(spectator);
             }
+
+            spectator.playAnimation(spectator._data.animations[0].name);
+            spectator.animation.finish();
         }
         currentStage.refresh();
     }
