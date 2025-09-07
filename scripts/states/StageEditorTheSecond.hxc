@@ -886,8 +886,10 @@ class StageEditorTheSecond extends MusicBeatState {
                     if (prop?.name == i?.name)
                         isProp = true;
                 }
-                if (isProp)
+                if (isProp) {
+                    // i?.color = target == 1 ? FlxColor.fromWebString(currentStage?._data?.props[index]?.color ?? "#FFFFFF") : 0xFF111111;
                     i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
+                }
 
                 if (player != null) 
                     player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
@@ -1062,8 +1064,18 @@ class StageEditorTheSecond extends MusicBeatState {
             }
             editCharacterWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editCharacterWindow"));
             editCharacterWindow.windowManager = windowManager;
+            editCharacterWindow.title = "Editing " + switch (selectedCharType) {
+                case "bf":
+                    "Player";
+                case "gf":
+                    "Spectator";
+                case "dad":
+                    "Opponent";
+            }
+            
             add(editCharacterWindow);
             cancelInput = true;
+
 
             var editConfirmButton = editCharacterWindow.findComponent("editCharacterWindowConfirm");
             bind(editConfirmButton, MouseEvent.CLICK, ()->{
