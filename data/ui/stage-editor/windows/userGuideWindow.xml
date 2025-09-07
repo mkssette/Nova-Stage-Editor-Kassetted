@@ -1,0 +1,33 @@
+<window title="User Guide" width="500" height="600" maximizable="false" minimizable="false" collapsable="false" closable="true">
+    <tabview id="tv2" width="100%" height="100%">
+        <box text="Guide">
+            <label text="I am NOT doing this rn lmaoooo" style="padding: 2px;" verticalAlign="center"/>
+
+            <link text="genzu" onclick="https://www.youtube.com/@_genzu"/>
+
+        </box>
+
+        <box text="Keybinds">
+            <tableview width="450" height="465" contentWidth="100%">
+                <header width="100%">
+                    <column id="action" text="Action" width="50%" />
+                    <column id="keybind" text="Keybind" width="50%" />
+                </header>
+                <data>
+                    <item action="Show User Guide" keybind="F1" />
+                </data>
+            </tableview>
+        </box>
+
+        <box text="Credits">
+        </box>
+        
+        <box text="To-Do">
+            
+        </box>
+
+    </tabview>
+    <window-footer width="100%">
+        <spacer width="100%" />
+    </window-footer>
+</window>

@@ -298,6 +298,19 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         });
 
+        // nwords <3
+
+        var userGuideCallback = ()->{ 
+            userGuideWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/userGuideWindow"));
+            userGuideWindow.windowManager = windowManager;
+            add(userGuideWindow);
+            userGuideWindow.screenCenter();
+        }
+
+        newKeybind(["F1"], userGuideCallback, "justPressed");
+
+        bind(menuBar.findComponent("userGuide"), MouseEvent.CLICK, userGuideCallback);
+
         stageDataWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/stageDataWindow"));
         stageDataWindow.screenCenter();
         stageDataWindow.windowManager = windowManager;
