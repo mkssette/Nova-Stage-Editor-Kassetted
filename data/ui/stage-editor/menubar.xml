@@ -1,51 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menubar id="menubar" width="100%" height="5%">
-  <style>
-    .menu {
-    // The width of the individual menu items
-    width: 120px;
-    }
-  </style>
+    <style>
+        .menu {
+        // The width of the individual menu items
+        width: 120px;
+        }
+    </style>
 
-  <menu text="File" width="300">
-    <menu-item id="newStage" text="New" shortcutText="Ctrl + N" disabled="true"/>
-    <menu-separator />
-    <menu-item id="saveStage" text="Save" shortcutText="Ctrl + S"/>
-    <menu-item id="saveStageAs" text="Save As" shortcutText="Ctrl + Shift + S" />
-    <menu-item id="saveStageForPsych" text="Save For Psych" shortcutText="(Coming Soon)" disabled="true"/>
-    <menu-item id="saveStageForCNE" text="Save For Codename Engine" shortcutText="(Coming Soon)" disabled="true"/>
-    <menu-separator />
-    <menu-item id="exitToMenu" text="Exit To Menu" shortcutText="Ctrl + Q" />
-  </menu>
-  <!-- <menu text="Windows">
+    <menu text="File" width="300">
+        <menu-item id="newStage" text="New" shortcutText="Ctrl + N"/>
+        <menu-separator />
+        <menu-item id="saveStage" text="Save" shortcutText="Ctrl + S" />
+        <menu-item id="saveStageAs" text="Save As" shortcutText="Ctrl + Shift + S" />
+        <menu-item id="saveStageForPsych" text="Save For Psych" shortcutText="(Coming Soon)"
+            disabled="true" />
+        <menu-item id="saveStageForCNE" text="Save For Codename Engine" shortcutText="(Coming Soon)"
+            disabled="true" />
+        <menu-separator />
+        <menu-item id="exitToMenu" text="Exit To Menu" shortcutText="Ctrl + Q" />
+    </menu>
+    <!-- <menu text="Windows">
     <menu-item id="stageDataWindow" text="Stage Data" />
   </menu> -->
 
-  <menu text="View" width="300">
-    <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
-    <menu-separator />
-    <menu-item id="viewFromPlayer" text="View Stage From Player" shortcutText="(Coming Soon)" disabled="true" />
-    <menu-item id="viewFromOpponent" text="View Stage From Opponent" shortcutText="(Coming Soon)" disabled="true" />
-    <menu-item id="viewFromSpectator" text="View Stage From Spectator" shortcutText="(Coming Soon)" disabled="true" />
-  </menu>
-
-  <menu text="Audio" width="300">
-    <menu text="Editor Music" id="musicMenu">
+    <menu text="View" width="300">
+        <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
+        <menu-separator />
+        <menu-item id="viewFromPlayer" text="View Stage From Player" shortcutText="(Coming Soon)"
+            disabled="true" />
+        <menu-item id="viewFromOpponent" text="View Stage From Opponent"
+            shortcutText="(Coming Soon)" disabled="true" />
+        <menu-item id="viewFromSpectator" text="View Stage From Spectator"
+            shortcutText="(Coming Soon)" disabled="true" />
     </menu>
-    <vbox width="100%" style="padding: 12px;">
-      <menu-separator />
-      <spacer height="10%"/>
-      <label id="editorMusicVolume" text="Editor Music - 100%" />
-      <slider id="menubarItemVolumeInstrumental" width="100%" majorTicks="10" minorTicks="5" pos="100" />
-    </vbox>
-  </menu>
 
-  <menu text="Help" width="300">
-    <menu-item id="userGuide" text="User Guide" shortcutText="F1" />
-    <menu-item id="checkForUpdates" text="Check for Updates" shortcutText="(Coming Soon)" disabled="true" />
-    <menu-item id="redownloadEditor" text="Re-Download Editor" shortcutText="(Coming Soon)" disabled="true" />
-  </menu>
+    <menu text="Audio" width="300">
+        <menu text="Editor Music" id="musicMenu">
+        </menu>
+        <vbox width="100%" style="padding: 12px;">
+            <menu-separator />
+            <spacer height="10%" />
+            <label id="editorMusicVolume" text="Editor Music - 100%" />
+            <slider id="menubarItemVolumeInstrumental" width="100%" majorTicks="10" minorTicks="5"
+                pos="100" />
+        </vbox>
+    </menu>
 
-  <spacer width="100%" />
-  <label text="" verticalAlign="center" id="menuBarTitle" />
+    <menu text="Help" width="300">
+        <menu-item id="userGuide" text="User Guide" shortcutText="F1" />
+        <menu-item id="checkForUpdates" text="Check for Updates" shortcutText="(Coming Soon)"
+            disabled="true" />
+        <menu-item id="redownloadEditor" text="Re-Download Editor" shortcutText="(Coming Soon)"
+            disabled="true" />
+    </menu>
+
+    <spacer width="100%" />
+    <label text="" verticalAlign="center" id="menuBarTitle" />
 </menubar>
