@@ -339,6 +339,9 @@ class StageEditorTheSecond extends MusicBeatState {
             refreshPropList();
             reloadStage();
             resetChars();
+            
+            propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
+            propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
         }
         bind(deletePropButton, MouseEvent.CLICK, deletePropCallback);
         newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
@@ -346,10 +349,15 @@ class StageEditorTheSecond extends MusicBeatState {
 
         var newPropButton = stageDataWindow.findComponent("createPropButton");
         var newPropCallback = ()->{
-            currentStage._data.props.push(templateProp());
+            var proper = templateProp();
+            currentStage._data.props.push(proper);
             refreshPropList();
             reloadStage();
             resetChars();
+            
+            // propListView.selectedItems = [];
+            propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
+            propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
         }
         bind(newPropButton, MouseEvent.CLICK, newPropCallback);
         // newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
@@ -745,6 +753,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         deselectStage = function(?target:Float) {
             propListView.selectedItems = [];
+            propListView.selectedItem = null;
             selectedProp = null;
             var index = 0;
             for (i in currentStage.members) {
