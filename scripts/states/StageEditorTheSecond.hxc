@@ -1248,6 +1248,11 @@ class StageEditorTheSecond extends MusicBeatState {
         stageList.disabled = cancelInput; */
         stageDataWindow.disabled = cancelInput;
 
+        if (!cancelInput && selectedProp == null && selectedChar == null && FlxG.mouse.pressed) {
+            camGame.scroll.x -= FlxG.mouse.deltaX/camGame.zoom;
+            camGame.scroll.y -= FlxG.mouse.deltaY/camGame.zoom;
+        }
+
         if (menuBar != null)
             menuBar.disabled = cancelInput;
 
