@@ -338,6 +338,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
             refreshPropList();
             reloadStage();
+            resetChars();
         }
         bind(deletePropButton, MouseEvent.CLICK, deletePropCallback);
         newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
@@ -348,6 +349,7 @@ class StageEditorTheSecond extends MusicBeatState {
             currentStage._data.props.push(templateProp());
             refreshPropList();
             reloadStage();
+            resetChars();
         }
         bind(newPropButton, MouseEvent.CLICK, newPropCallback);
         // newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
@@ -364,7 +366,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
                 editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropWindow"));
                 editPropWindow.screenCenter();
-                editPropWindow.title = StringTools.replace(editPropWindow.title, "$propID", '"' + propData.name + '"');
+                editPropWindow.title = editPropWindow.title.replace("$propID", '"' + propData.name + '"');
                 editPropWindow.windowManager = windowManager;
                 add(editPropWindow);
 
@@ -563,9 +565,9 @@ class StageEditorTheSecond extends MusicBeatState {
                                 var frameIndicesTextField = animation.findComponent("editAnimWindowAnimIndicesTextField");
                                 frameIndicesTextField.text = i.frameIndices.join(", ");
                                 frameIndicesTextField.onChange = ()->{
-                                    frameIndicesTextField.text = StringTools.replace(frameIndicesTextField.text, "  ", " ");
-                                    frameIndicesTextField.text = StringTools.replace(frameIndicesTextField.text, " ,", ",");
-                                    frameIndicesTextField.text = StringTools.replace(frameIndicesTextField.text, ",,", ",");
+                                    frameIndicesTextField.text = frameIndicesTextField.text.replace("  ", " ");
+                                    frameIndicesTextField.text = frameIndicesTextField.text.replace(" ,", ",");
+                                    frameIndicesTextField.text = frameIndicesTextField.text.replace(",,", ",");
                                     i.frameIndices = stringToIndices(frameIndicesTextField.text);
                                     // i.prefix = frameIndicesTextField.text;
                                 }
@@ -752,7 +754,7 @@ class StageEditorTheSecond extends MusicBeatState {
                         isProp = true;
                 }
                 if (isProp)
-                    i.alpha = target ?? currentStage._data.props[index].alpha ?? 1;
+                    i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
 
                 index++;
             }
@@ -1259,7 +1261,7 @@ class StageEditorTheSecond extends MusicBeatState {
     function templateAnimation() {
         var index = 0;
         for (i in getSelectedPropData().animations) {
-            if (StringTools.startsWith(i.name, "New Animation")) {
+            if (i.name.startsWith("New Animation")) {
                 index++;
             }
         }
@@ -1283,7 +1285,7 @@ class StageEditorTheSecond extends MusicBeatState {
         var theZIndex = 0;
         var index = 0;
         for (i in currentStage._data.props) {
-            if (StringTools.startsWith(i.name, "New Prop")) {
+            if (i.name.startsWith("New Prop")) {
                 index++;
             }
             if (i.zIndex > theZIndex)
@@ -1302,7 +1304,7 @@ class StageEditorTheSecond extends MusicBeatState {
 				0,
 				0
 			],
-			scale: Reflect.copy(currentStage._data.props[0]).scale,
+			scale: Reflect.copy(new Stage('mainStage')._data.props[0]).scale,
 			animType: "sparrow",
 			flipX: false,
 			flipY: false,
@@ -1317,7 +1319,7 @@ class StageEditorTheSecond extends MusicBeatState {
     }
 
     function stringToIndices(string:String):Array<Int> {
-        string = StringTools.replace(string, " ", "");
+        string = string.replace(" ", "");
         var split = string.split(",");
         var indices = [];
         for (i in split) {
