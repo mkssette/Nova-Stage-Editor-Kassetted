@@ -8,7 +8,7 @@
   </style>
 
   <menu text="File" width="300">
-    <menu-item id="newStage" text="New" shortcutText="Ctrl + N" />
+    <menu-item id="newStage" text="New" shortcutText="Ctrl + N" disabled="true"/>
     <menu-separator />
     <menu-item id="saveStage" text="Save" shortcutText="Ctrl + S"/>
     <menu-item id="saveStageAs" text="Save As" shortcutText="Ctrl + Shift + S" />

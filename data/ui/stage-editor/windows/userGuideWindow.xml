@@ -13,7 +13,7 @@
                 <data>
                     <item action="Show User Guide" keybind="F1"/>
 
-                    <item action="New Stage" keybind="Ctrl + N"/>
+                    <!-- <item action="New Stage" keybind="Ctrl + N"/> -->
                     <item action="Save Stage" keybind="Ctrl + S"/>
                     <item action="Save Stage As" keybind="Ctrl + Shift + S"/>
                     <item action="Exit To Menu" keybind="Ctrl + Q"/>
