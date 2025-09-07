@@ -838,6 +838,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
             deselectChars();
             deselectStage();
+            resetChars();
         }
 
         opponentDropdown.onChange = ()->{
@@ -851,6 +852,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
             deselectChars();
             deselectStage();
+            resetChars();
         }
 
         spectatorDropdown.onChange = ()->{
@@ -864,6 +866,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
             deselectChars();
             deselectStage();
+            resetChars();
         }
 
 
@@ -1216,6 +1219,14 @@ class StageEditorTheSecond extends MusicBeatState {
         playerDropdown.selectedItem = { text: "Boyfriend" };
         opponentDropdown.selectedItem = { text: "Daddy Dearest" };
         spectatorDropdown.selectedItem = { text: "Girlfriend" };
+
+        /* menuBar.findComponent("viewFromPlayer").onClick = ()->{
+            //FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
+            FlxTween.tween(camGame.scroll, { 
+                x: player.cameraFocusPoint.x - (camGame.width/2) + (player.characterOrigin.x), 
+                y: player.cameraFocusPoint.y - (camGame.height/2) + (player.characterOrigin.y/2)
+            }, 0.25, { ease: FlxEase.quartOut });
+        } */
     }
 
     function reloadStage() {
