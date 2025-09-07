@@ -95,6 +95,7 @@ using StringTools;
 
 class StageEditorTheSecond extends MusicBeatState {
 
+    var stageRegistry;
     var customStageRegistry = [
         "init" => {
             curData: null,
@@ -157,6 +158,36 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var editAnimationCallback;
 
+     var blacklist = [
+            "Main Stage",
+            "Main Stage [Erect]",
+            
+            "Spooky Mansion",
+            "Spooky Mansion [Erect]",
+            
+            "Christmas Mall (Nice)", 
+            "Christmas Mall (Naughty)", 
+            "Christmas Mall (Nice) [Erect]", 
+            
+            "Limo Ride", 
+            "Limo Ride [Erect]", 
+            
+            "Philly (Train)",
+            "Philly (Blazin')", 
+            "Philly (Streets)", 
+            "Philly (Train) [Erect]",
+            "Philly (Streets) [Erect]",
+            
+            "School (Date)",
+            "School (Hate)",
+            "School (Date) [Pico]",
+            "School (Date) [Erect]",
+            "School (Hate) [Erect]",
+
+            "Tankman Battlefield",
+            "Tankman Battlefield [Erect]"
+        ];
+
     function new() {
         super('StageEditorTheSecond');
     }
@@ -194,7 +225,7 @@ class StageEditorTheSecond extends MusicBeatState {
         nameList.sort(SortUtil.alphabetically);
         idList.sort(SortUtil.alphabetically);
 
-        var stageRegistry = new StageRegistry();
+        stageRegistry = new StageRegistry();
         stageRegistry.loadEntries();
 
         var bg = new FunkinSprite(0, 0).loadGraphic(Paths.image('menuDesat'));
@@ -293,6 +324,59 @@ class StageEditorTheSecond extends MusicBeatState {
         bind(newStageButton, MouseEvent.CLICK, newStageCallback);
         newKeybind(["CONTROL", "N"], newStageCallback);
 
+        var deleteStageButton = menuBar.findComponent("deleteStage");
+        deleteStageButton.onClick = ()->{
+            if (currentStage.id == "mainStage") {
+                newNotification("Error!", 'Could not delete stage!\n"assets" is protected.', NotificationType.Error, 5000);
+                return;
+            }
+
+            var deleteStageCallback = ()->{
+                for (mod in PolymodHandler.getAllMods()) {
+                    if (FileUtil.directoryExists("mods/" + mod.id + "/data/stages/")) {
+                        if (FileUtil.readDir("mods/" + mod.id + "/data/stages/").contains(currentStage.id + ".json")) {
+                            var path = "mods/" + mod.id + "/data/stages/" + currentStage.id + ".json";
+                            FileUtil.deleteFile(path);
+                            
+                            newNotification("Success!", 'Successfully deleted stage "' + currentStage.stageName + '"', NotificationType.Success, 5000);
+                            
+                            blacklist.push(currentStage.stageName);
+                            
+                            new FlxTimer().start(0.1, ()->{
+                                reloadStageList();
+                                stageList.selectedItem = { text: "Main Stage", id: "mainStage" };
+                            });
+
+                        }
+                    }
+                }
+            }
+
+            if (FlxG.keys.pressed.SHIFT) {
+                deleteStageCallback();
+            } else {
+                var deleteStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/deleteStageDialog"));
+                add(deleteStageDialog);
+                deleteStageDialog.screenCenter();
+                deleteStageDialog.showDialog(false);
+                cancelInput = true;
+    
+                deleteStageDialog.findComponent("dialogContinue").color = 0xFFFF8888;
+                deleteStageDialog.findComponent("dialogContinue").onClick = ()->{
+                    cancelInput = false;
+                    deleteStageDialog.hide();
+                    deleteStageCallback();
+                }
+    
+                deleteStageDialog.findComponent("dialogCancel").color = 0xFFFF8888;
+                deleteStageDialog.findComponent("dialogCancel").onClick = ()->{
+                    cancelInput = false;
+                    deleteStageDialog.hide();
+                }
+            }
+
+        }
+
         var exit = ()->{
             FlxG.switchState(new MainMenuState());
             PolymodHandler.forceReloadAssets();
@@ -369,49 +453,8 @@ class StageEditorTheSecond extends MusicBeatState {
         stageDataWindow.y = menuBar.height + 10;
 
         stageList = stageDataWindow.findComponent("stageDropdown");
-
-        var blacklist = [
-            "Main Stage",
-            "Main Stage [Erect]",
-            
-            "Spooky Mansion",
-            "Spooky Mansion [Erect]",
-            
-            "Christmas Mall (Nice)", 
-            "Christmas Mall (Naughty)", 
-            "Christmas Mall (Nice) [Erect]", 
-            
-            "Limo Ride", 
-            "Limo Ride [Erect]", 
-            
-            "Philly (Train)",
-            "Philly (Blazin')", 
-            "Philly (Streets)", 
-            "Philly (Train) [Erect]",
-            "Philly (Streets) [Erect]",
-            
-            "School (Date)",
-            "School (Hate)",
-            "School (Date) [Pico]",
-            "School (Date) [Erect]",
-            "School (Hate) [Erect]",
-
-            "Tankman Battlefield",
-            "Tankman Battlefield [Erect]"
-        ];
         
-        for (i in stageRegistry.entries.keys()) {
-            if (!blacklist.contains(stageRegistry.entries.get(i).stageName)) {
-                var data = new Stage(i);
-                data.onCreate();
-                customStageRegistry.set(i, data._data);
-                stageList.dataSource.add({ text: stageRegistry.entries.get(i).stageName, id: i });
-            }
-        }
-        var data = new Stage("mainStage");
-        data.onCreate();
-        customStageRegistry.set("mainStage", data._data);
-        stageList.dataSource.insert(0, { text: "Main Stage", id: "mainStage" });
+        reloadStageList();
 
         var deletePropButton = stageDataWindow.findComponent("deletePropButton");
         var deletePropCallback = ()->{
@@ -1501,5 +1544,24 @@ class StageEditorTheSecond extends MusicBeatState {
             spectator.animation.finish();
         }
         currentStage.refresh();
+    }
+
+    function reloadStageList() {
+        stageList.dataSource.clear();
+
+        var data = new Stage("mainStage");
+        data.onCreate();
+        
+        customStageRegistry.set("mainStage", data._data);
+        stageList.dataSource.add({ text: "Main Stage", id: "mainStage" });
+
+        for (i in stageRegistry.entries.keys()) {
+            if (!blacklist.contains(stageRegistry.entries.get(i).stageName)) {
+                var data = new Stage(i);
+                data.onCreate();
+                customStageRegistry.set(i, data._data);
+                stageList.dataSource.add({ text: stageRegistry.entries.get(i).stageName, id: i });
+            }
+        }
     }
 }

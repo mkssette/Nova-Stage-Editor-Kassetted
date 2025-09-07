@@ -17,6 +17,8 @@
         <menu-item id="saveStageForCNE" text="Save For Codename Engine" shortcutText="(Coming Soon)"
             disabled="true" />
         <menu-separator />
+        <menu-item id="deleteStage" text="Delete Stage" style="color: indianred"/>
+        <menu-separator />
         <menu-item id="exitToMenu" text="Exit To Menu" shortcutText="Ctrl + Q" />
     </menu>
     <!-- <menu text="Windows">
