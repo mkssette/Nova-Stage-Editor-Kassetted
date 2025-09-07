@@ -339,7 +339,7 @@ class StageEditorTheSecond extends MusicBeatState {
             refreshPropList();
             reloadStage();
             resetChars();
-            
+
             propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
             propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
         }
@@ -1074,6 +1074,9 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
+        playerDropdown.selectedItem = { text: "Boyfriend" };
+        opponentDropdown.selectedItem = { text: "Daddy Dearest" };
+        spectatorDropdown.selectedItem = { text: "Girlfriend" };
     }
 
     function reloadStage() {
