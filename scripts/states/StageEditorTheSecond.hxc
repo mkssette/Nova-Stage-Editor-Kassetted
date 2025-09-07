@@ -1,5 +1,7 @@
 import funkin.ui.MusicBeatState;
 
+import funkin.audio.FunkinSound;
+
 import funkin.play.stage.Stage;
 
 import haxe.ui.RuntimeComponentBuilder;
@@ -79,6 +81,9 @@ import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
 
 import flixel.util.FlxColor;
+import flixel.util.FlxTimer;
+
+import funkin.play.character.CharacterType;
 
 import haxe.Json;
 
@@ -86,7 +91,13 @@ import StringTools;
 import Reflect;
 import Math;
 
+using StringTools;
+
 class StageEditorTheSecond extends MusicBeatState {
+
+    var player;
+    var opponent;
+    var spectator;
 
     var stageIdList = [];
 
@@ -103,15 +114,28 @@ class StageEditorTheSecond extends MusicBeatState {
 	var camGame:FlxCamera;
     var camBackground:FlxCamera;
 
+    var stageDataWindow;
+
+    var editCharacterWindow;
+
     var editPropWindow;
+    var editPropWindowOffset = 0;
+    var editAnimToggle = false;
+    var offsetTween:FlxTween;
+    
+    var editAnimationsWindow;
+
     var saveAsComponent;
     
     var propListView;
     var characterListView;
+    var stageList;
 
     var currentStage:Stage;
 
     var selectedProp;
+    var selectedChar;
+    var selectedCharType = "none";
 
     var yLine;
     var xLine;
@@ -120,6 +144,11 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var deselectStage;
     var deselectChars;
+
+    var doubleClickTween;
+    var clickIndex = 0;
+
+    var editAnimationCallback;
 
     function new() {
         super('StageEditorTheSecond');
@@ -150,15 +179,19 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         var nameList = [];
+        var idList = [];
         for (i in CharacterDataParser.characterCache.keys()) {
             nameList.push(CharacterDataParser.characterCache.get(i).name);
+            idList.push(CharacterDataParser.characterCache.get(i).id);
         }
         nameList.sort(SortUtil.alphabetically);
+        idList.sort(SortUtil.alphabetically);
 
         var stageRegistry = new StageRegistry();
         stageRegistry.loadEntries();
 
         var blacklist = [
+            "Main Stage",
             "Main Stage [Erect]",
             
             "Spooky Mansion",
@@ -196,7 +229,8 @@ class StageEditorTheSecond extends MusicBeatState {
         }
         stageNameList.sort(SortUtil.alphabetically);
         stageIdList.sort(SortUtil.alphabetically);
-        trace(stageNameList);
+        stageNameList.insert(0, "Main Stage");
+        stageIdList.insert(0, "mainStage");
 
         var bg = new FunkinSprite(0, 0).loadGraphic(Paths.image('menuDesat'));
 		bg.scrollFactor.set(0, 0);
@@ -258,11 +292,13 @@ class StageEditorTheSecond extends MusicBeatState {
         bind(saveStageComponent, MouseEvent.CLICK, saveStageCallback);
         newKeybind(["CONTROL", "S"], saveStageCallback);
         newKeybind(["CONTROL", "R"], ()->{
-            if (!FlxG.keys.pressed.SHIFT) 
+            if (!FlxG.keys.pressed.SHIFT) {
                 currentStage.resetStage();
+                resetChars();
+            }
         });
 
-        var stageDataWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/stageDataWindow"));
+        stageDataWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/stageDataWindow"));
         stageDataWindow.screenCenter();
         stageDataWindow.windowManager = windowManager;
         add(stageDataWindow);
@@ -271,14 +307,39 @@ class StageEditorTheSecond extends MusicBeatState {
         stageDataWindow.x = FlxG.width - stageDataWindow.width - 10;
         stageDataWindow.y = menuBar.height + 10;
 
+        var deletePropButton = stageDataWindow.findComponent("deletePropButton");
+        var deletePropCallback = ()->{
+            if (selectedProp == null) return;
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    currentStage._data.props.remove(i);
+                }
+            }
+            refreshPropList();
+            reloadStage();
+        }
+        bind(deletePropButton, MouseEvent.CLICK, deletePropCallback);
+        newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
+
+
+        var newPropButton = stageDataWindow.findComponent("createPropButton");
+        var newPropCallback = ()->{
+            currentStage._data.props.push(templateProp());
+            refreshPropList();
+            reloadStage();
+        }
+        bind(newPropButton, MouseEvent.CLICK, newPropCallback);
+        // newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
+
+
         var editPropButton = stageDataWindow.findComponent("editPropButton");
-        bind(editPropButton, MouseEvent.CLICK, ()->{
+        var editPropCallback = ()->{
             if (selectedProp == null) {
                 newNotification("Error!", "Please Select a Prop First.", NotificationType.Error);
             } else {
                 cancelInput = true;
                 var propData = getSelectedPropData();
-                trace(propData);
+                // trace(propData);
 
                 editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropWindow"));
                 editPropWindow.screenCenter();
@@ -301,7 +362,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
                 var animationTypeStepper = editPropWindow.findComponent("editPropWindowAnimationStepper");
                 animationTypeStepper.onChange = ()->{
-                    trace(animationTypeStepper.selectedItem);
+                    propData.animType = animationTypeStepper.selectedItem.data;
                 }
 
 
@@ -332,6 +393,242 @@ class StageEditorTheSecond extends MusicBeatState {
                     selectedProp.blend = Std.parseInt(blendModeDropdown.selectedItem.data) != -1 ? Std.parseInt(blendModeDropdown.selectedItem.data) : null;
                 }
 
+                var xPosStepper = editPropWindow.findComponent("editPropWindowPosStepperX");
+                xPosStepper.pos = Math.round(selectedProp.x);
+                xPosStepper.onChange = ()->{
+                    propData.position[0] = xPosStepper.pos;
+                    selectedProp.x = xPosStepper.pos;
+                }
+
+                var yPosStepper = editPropWindow.findComponent("editPropWindowPosStepperY");
+                yPosStepper.pos = Math.round(selectedProp.y);
+                yPosStepper.onChange = ()->{
+                    propData.position[1] = yPosStepper.pos;
+                    selectedProp.y = yPosStepper.pos;
+                }
+
+                var xScrollPosStepper = editPropWindow.findComponent("editPropWindowScrollStepperX");
+                xScrollPosStepper.pos = selectedProp.scrollFactor.x;
+                xScrollPosStepper.onChange = ()->{
+                    propData.scroll[0] = xScrollPosStepper.pos;
+                    selectedProp.scrollFactor.x = xScrollPosStepper.pos;
+                }
+
+                var yScrollPosStepper = editPropWindow.findComponent("editPropWindowScrollStepperY");
+                yScrollPosStepper.pos = selectedProp.scrollFactor.y;
+                yScrollPosStepper.onChange = ()->{
+                    propData.scroll[1] = yScrollPosStepper.pos;
+                    selectedProp.scrollFactor.y = yScrollPosStepper.pos;
+                }
+
+                var scaleStepper = editPropWindow.findComponent("editPropWindowScaleStepper");
+                scaleStepper.pos = selectedProp.scale.x;
+                scaleStepper.onChange = ()->{
+                    propData.scale[0] = scaleStepper.pos;
+                    propData.scale[1] = scaleStepper.pos;
+                    selectedProp.scale.set(scaleStepper.pos, scaleStepper.pos);
+                }
+
+                var alphaStepper = editPropWindow.findComponent("editPropWindowAlphaStepper");
+                alphaStepper.pos = selectedProp.alpha;
+                alphaStepper.onChange = ()->{
+                    propData.alpha = alphaStepper.pos;
+                    selectedProp.alpha = alphaStepper.pos;
+                }
+
+                var angleStepper = editPropWindow.findComponent("editPropWindowAngleStepper");
+                angleStepper.pos = selectedProp.angle;
+                angleStepper.onChange = ()->{
+                    if (angleStepper.pos == -1) {
+                        angleStepper.pos = 359;
+                    } else if (angleStepper.pos == 360) {
+                        angleStepper.pos = 0;
+                    }
+                    propData.angle = angleStepper.pos;
+                    selectedProp.angle = angleStepper.pos;
+                }
+
+                var danceEveryStepper = editPropWindow.findComponent("editPropWindowDanceStepper");
+                danceEveryStepper.pos = propData.danceEvery ?? 0;
+                danceEveryStepper.onChange = ()->{
+                    propData.danceEvery = danceEveryStepper.pos;
+                }
+
+                var zIndexStepper = editPropWindow.findComponent("editPropWindowZIndexStepper");
+                zIndexStepper.pos = selectedProp.zIndex;
+                zIndexStepper.onChange = ()->{
+                    propData.zIndex = zIndexStepper.pos;
+                    selectedProp.zIndex = zIndexStepper.pos;
+                    currentStage.refresh();
+                }
+
+                var flipXCheck = editPropWindow.findComponent("editPropWindowFlipXCheckbox");
+                flipXCheck.selected = selectedProp.flipX;
+                flipXCheck.onChange = ()->{
+                    propData.flipX = flipXCheck.selected;
+                    selectedProp.flipX = flipXCheck.selected;
+                }
+
+                var flipYCheck = editPropWindow.findComponent("editPropWindowFlipYCheckbox");
+                flipYCheck.selected = selectedProp.flipY;
+                flipYCheck.onChange = ()->{
+                    propData.flipY = flipYCheck.selected;
+                    selectedProp.flipY = flipYCheck.selected;
+                }
+
+                var isPixelCheck = editPropWindow.findComponent("editPropWindowIsPixelCheckbox");
+                isPixelCheck.selected = !selectedProp.antialiasing;
+                isPixelCheck.onChange = ()->{
+                    propData.isPixel = isPixelCheck.selected;
+                    selectedProp.antialiasing = !isPixelCheck.selected;
+                }
+
+                var editAnimationButton = editPropWindow.findComponent("editPropWindowAnimationsButton");
+                editAnimationCallback = ()->{
+                    if (offsetTween != null)
+                        offsetTween.cancel();
+                    if (!editAnimToggle) {
+                        //offsetTween = FlxTween.num(editPropWindowOffset, -390, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                        editPropWindowOffset = -390;
+                        
+                        editAnimationsWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
+                        editAnimationsWindow.windowManager = windowManager;
+                        add(editAnimationsWindow);
+
+                        var editAnimationConfirmButton = editAnimationsWindow.findComponent("confirmButton");
+                        bind(editAnimationConfirmButton, MouseEvent.CLICK, ()->{
+                            offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                            windowManager.closeWindow(editAnimationsWindow);
+                            editAnimToggle = false;
+                        });
+
+                        var acc1 = editAnimationsWindow.findComponent("ac1");
+
+                        var refreshAnimationList = ()->{
+
+                            var index = 0;
+                            for (i in getSelectedPropData().animations) {
+
+                                if (getSelectedPropData().startingAnimation == null && index == 0) {
+                                    getSelectedPropData().startingAnimation = i.name;
+                                }
+
+                                var animation = RuntimeComponentBuilder.build(Paths.ui("stage-editor/parts/animationPart"));
+                                animation.text = i.name;
+                                animation.id = i.name;
+
+                                var assetPathTextField = animation.findComponent("editAnimWindowAssetPathTextField");
+                                assetPathTextField.text = i.assetPath;
+                                assetPathTextField.onChange = ()->{
+                                    i.assetPath = assetPathTextField.text;
+                                    animation.text = i.assetPath;
+                                    animation.id = i.assetPath;
+                                }
+
+                                var nameTextField = animation.findComponent("editAnimWindowAnimNameTextField");
+                                nameTextField.text = i.name;
+                                nameTextField.onChange = ()->{
+                                    i.name = nameTextField.text;
+                                    animation.text = i.name;
+                                    animation.id = i.name;
+                                }
+
+                                var prefixTextField = animation.findComponent("editAnimWindowAnimPrefixTextField");
+                                prefixTextField.text = i.prefix;
+                                prefixTextField.onChange = ()->{
+                                    i.prefix = prefixTextField.text;
+                                }
+
+                                var frameIndicesTextField = animation.findComponent("editAnimWindowAnimIndicesTextField");
+                                frameIndicesTextField.text = i.frameIndices.join(", ");
+                                frameIndicesTextField.onChange = ()->{
+                                    frameIndicesTextField.text = StringTools.replace(frameIndicesTextField.text, "  ", " ");
+                                    frameIndicesTextField.text = StringTools.replace(frameIndicesTextField.text, " ,", ",");
+                                    frameIndicesTextField.text = StringTools.replace(frameIndicesTextField.text, ",,", ",");
+                                    i.frameIndices = stringToIndices(frameIndicesTextField.text);
+                                    // i.prefix = frameIndicesTextField.text;
+                                }
+
+                                var xOffsetStepper = animation.findComponent("editAnimWindowAnimOffsetXStepper");
+                                xOffsetStepper.pos = Math.round(i.offsets[0]);
+                                xOffsetStepper.onChange = ()->{
+                                    i.offsets[0] = xOffsetStepper.pos;
+                                }
+
+                                var yOffsetStepper = animation.findComponent("editAnimWindowAnimOffsetYStepper");
+                                yOffsetStepper.pos = Math.round(i.offsets[1]);
+                                yOffsetStepper.onChange = ()->{
+                                    i.offsets[1] = yOffsetStepper.pos;
+                                }
+
+                                var framerateStepper = animation.findComponent("editAnimWindowAnimFrameRateStepper");
+                                framerateStepper.pos = i.frameRate;
+                                framerateStepper.onChange = ()->{
+                                    i.frameRate = framerateStepper.pos;
+                                }
+
+                                var flipXCheck = animation.findComponent("editPropWindowFlipXCheckbox");
+                                flipXCheck.selected = i.flipX;
+                                flipXCheck.onChange = ()->{
+                                    i.flipX = flipXCheck.selected;
+                                }
+
+                                var flipYCheck = animation.findComponent("editPropWindowFlipYCheckbox");
+                                flipYCheck.selected = i.flipY;
+                                flipYCheck.onChange = ()->{
+                                    i.flipY = flipYCheck.selected;
+                                }
+
+                                var loopedCheck = animation.findComponent("editPropWindowLoopedCheckbox");
+                                loopedCheck.selected = i.looped;
+                                loopedCheck.onChange = ()->{
+                                    i.looped = loopedCheck.selected;
+                                }
+
+                                var isDefaultCheck = animation.findComponent("editPropWindowIsDefaultCheckbox");
+                                isDefaultCheck.selected = getSelectedPropData().startingAnimation == i.name;
+                                isDefaultCheck.onClick = ()->{
+                                    getSelectedPropData().startingAnimation = isDefaultCheck.selected ? i.name : null;
+                                    for (i2 in getSelectedPropData().animations) {
+                                        acc1.findComponent(i2.name).findComponent("editPropWindowIsDefaultCheckbox").selected = getSelectedPropData().startingAnimation == i2.name;
+                                    }
+                                }
+
+                                acc1.addComponent(animation);
+                                
+                                index++;
+                            }
+                        }
+                        refreshAnimationList();
+
+                        var newAnimationButton = editAnimationsWindow.findComponent("newAnimation");
+                        newAnimationButton.onClick = ()->{
+                            getSelectedPropData().animations.push(templateAnimation());
+                            windowManager.closeWindow(editAnimationsWindow);
+                            editAnimToggle = false;
+                            editAnimationCallback();
+                        }
+
+                        var deleteAnimationButton = editAnimationsWindow.findComponent("deleteAnimation");
+                        deleteAnimationButton.onClick = ()->{
+                            for (i in getSelectedPropData().animations) {
+                                if (i.name == acc1.selectedPage.id) {
+                                    getSelectedPropData().animations.remove(i);
+                                    windowManager.closeWindow(editAnimationsWindow);
+                                    editAnimToggle = false;
+                                    editAnimationCallback();
+                                    
+                                }
+                            }
+                        }
+                    } else {
+                        offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                        windowManager.closeWindow(editAnimationsWindow);
+                    }
+                    editAnimToggle = !editAnimToggle;
+                }
+                bind(editAnimationButton, MouseEvent.CLICK, editAnimationCallback);
+
                 var editConfirmButton = editPropWindow.findComponent("editPropWindowConfirm");
                 bind(editConfirmButton, MouseEvent.CLICK, ()->{
                     if (nameTextField.text == "") {
@@ -343,19 +640,21 @@ class StageEditorTheSecond extends MusicBeatState {
                     if (nameTextField.text != "" && assetPathTextField.text != "") {
                         cancelInput = false;
                         windowManager.closeWindow(editPropWindow);
+                        if (editAnimationsWindow != null)
+                            windowManager.closeWindow(editAnimationsWindow);
                         propData.name = nameTextField.text;
                         propData.assetPath = assetPathTextField.text;
-                        for (i in currentStage.members) {
-                            currentStage.remove(i);
-                        }
-                        currentStage.buildStage();
+                        reloadStage();
                         deselectStage();
                         deselectChars();
                         refreshPropList();
+                        editAnimToggle = false;
+                        FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
                     }
                 });
             }
-        });      
+        }
+        bind(editPropButton, MouseEvent.CLICK, editPropCallback);    
 
         var playerDropdown = stageDataWindow.findComponent("playerDropdown");
         var opponentDropdown = stageDataWindow.findComponent("opponentDropdown");
@@ -366,8 +665,51 @@ class StageEditorTheSecond extends MusicBeatState {
             spectatorDropdown.dataSource.add({text: i});
         }
 
-        var stageList = stageDataWindow.findComponent("stageDropdown");
-        for (i in stageNameList) stageList.dataSource.add({text: i});
+        playerDropdown.onChange = ()->{
+            currentStage.getBoyfriend(true);
+            for (i in CharacterDataParser.characterCache.keys()) {
+                if (CharacterDataParser.characterCache.get(i).name == playerDropdown.selectedItem.text) {
+                    player = CharacterDataParser.fetchCharacter(i);
+                    resetChars();
+                    break;
+                }
+            }
+            deselectChars();
+            deselectStage();
+        }
+
+        opponentDropdown.onChange = ()->{
+            currentStage.getDad(true);
+            for (i in CharacterDataParser.characterCache.keys()) {
+                if (CharacterDataParser.characterCache.get(i).name == opponentDropdown.selectedItem.text) {
+                    opponent = CharacterDataParser.fetchCharacter(i);
+                    resetChars();
+                    break;
+                }
+            }
+            deselectChars();
+            deselectStage();
+        }
+
+        spectatorDropdown.onChange = ()->{
+            currentStage.getGirlfriend(true);
+            for (i in CharacterDataParser.characterCache.keys()) {
+                if (CharacterDataParser.characterCache.get(i).name == spectatorDropdown.selectedItem.text) {
+                    spectator = CharacterDataParser.fetchCharacter(i);
+                    resetChars();
+                    break;
+                }
+            }
+            deselectChars();
+            deselectStage();
+        }
+
+        stageList = stageDataWindow.findComponent("stageDropdown");
+        var index = 0;
+        for (i in stageNameList) {
+            stageList.dataSource.add({text: i, id: stageIdList[index]});
+            index++;
+        }
 
         /* var propListView = stageDataWindow.findComponent("propsListView");
         propListView.onDataChanged = (data) -> {
@@ -380,13 +722,33 @@ class StageEditorTheSecond extends MusicBeatState {
         deselectStage = function(?target:Float) {
             propListView.selectedItems = [];
             selectedProp = null;
+            var index = 0;
             for (i in currentStage.members) {
-                i.alpha = target ?? 1;
+                var isProp = false;
+                for (prop in currentStage._data.props) {
+                    if (prop.name == i.name)
+                        isProp = true;
+                }
+                if (isProp)
+                    i.alpha = target ?? currentStage._data.props[index].alpha ?? 1;
+
+                if (player != null)
+                    player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
+
+                if (opponent != null)
+                    opponent.alpha = (opponent._data.alpha ?? 1) * (target ?? 1);
+
+                if (spectator != null)
+                    spectator.alpha = (spectator._data.alpha ?? 1) * (target ?? 1);
+
+                index++;
             }
         };
 
         deselectChars = ()->{
             characterListView.selectedItems = [];
+            selectedChar = null;
+            selectedCharType = "none";
             /* selectedProp = null;
             for (i in currentStage.members) {
                 i.alpha = 1;
@@ -395,6 +757,47 @@ class StageEditorTheSecond extends MusicBeatState {
 
         characterListView.onChange = ()->{
             deselectStage(0.5);
+            switch (characterListView.selectedItem.text) {
+                case "Player":
+                    if (player != null) {
+                        player.alpha = (player._data.alpha ?? 1);
+                        selectedChar = player;
+                        selectedCharType = "bf";
+                    } else {
+                        deselectChars();
+                        deselectStage();
+                    }
+                case "Opponent":
+                    if (opponent != null) {
+                        opponent.alpha = (opponent._data.alpha ?? 1);
+                        selectedChar = opponent;
+                        selectedCharType = "dad";
+                    } else {
+                        deselectChars();
+                        deselectStage();
+                    }
+                case "Spectator":
+                    if (spectator != null) {
+                        spectator.alpha = (spectator._data.alpha ?? 1);
+                        selectedChar = spectator;
+                        selectedCharType = "gf";
+                    } else {
+                        deselectChars();
+                        deselectStage();
+                    }
+            }
+        }
+
+        propListView.onClick = ()->{
+            clickIndex++;
+            if (doubleClickTween != null)
+                doubleClickTween.cancel();
+            doubleClickTween = new FlxTimer().start(0.25, ()->{
+                clickIndex = 0;
+            });
+            if (clickIndex == 2) {
+                editPropCallback();
+            }
         }
 
         propListView.onChange = ()->{
@@ -402,40 +805,60 @@ class StageEditorTheSecond extends MusicBeatState {
             yLine.scrollFactor.x = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.x; */
             selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
 
-            for (i in currentStage.members) {
+            currentStage.forEachAlive((i)->{
                 if (i != currentStage.getNamedProp(propListView.selectedItem.text)) {
-                    i.alpha = 0.5;
+                    i.alpha = getSelectedPropData().alpha * 0.5;
                 } else {
-                    i.alpha = 1;
+                    i.alpha = getSelectedPropData().alpha;
                 }
-            }
+            });
             deselectChars();
+            // clickIndex = 0;
+            // doubleClickTimer = 0;
+            /* if (doubleClickTween != null)
+                doubleClickTween.cancel(); */
         }
 
         newKeybind(["ESCAPE"], deselectStage);
         newKeybind(["ESCAPE"], deselectChars);
 
         stageList.onChange = ()->{
-            for (i in stageRegistry.entries.keys()) {
-                if (stageRegistry.entries.get(i).stageName == stageList.selectedItem.text) {
-                    if (members.contains(currentStage)) {
-                        remove(currentStage);
-                    }
-                    currentStage = new Stage(i);
-                    currentStage._cameras = [camGame];
-                    currentStage.onCreate();
-                    insert(0, currentStage);
-
-                    refreshPropList();
-
-                    stageDataWindow.findComponent("stageNameTextField").text = stageRegistry.entries.get(i).stageName;
-                    stageDataWindow.findComponent("defualtCamZoomStepper").pos = currentStage.camZoom;
-                    FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
-                    FlxTween.tween(camGame.scroll, { x: -FlxG.width/2, y: -FlxG.height/2 }, 0.25, { ease: FlxEase.quartOut });
-                    deselectStage();
-                    deselectChars();
-                }
+            if (members.contains(currentStage)) {
+                remove(currentStage);
             }
+            currentStage = new Stage(stageList.selectedItem.id);
+            currentStage._cameras = [camGame];
+            currentStage.onCreate();
+            reloadStage();
+            insert(0, currentStage);
+
+            refreshPropList();
+
+            stageDataWindow.findComponent("stageNameTextField").text = stageList.selectedItem.text;
+            stageDataWindow.findComponent("defualtCamZoomStepper").pos = currentStage.camZoom;
+            FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
+            FlxTween.tween(camGame.scroll, { x: -FlxG.width/2, y: -FlxG.height/2 }, 0.25, { ease: FlxEase.quartOut });
+            deselectStage();
+            deselectChars();
+            resetChars();
+        }
+
+        var stageNameTextField = stageDataWindow.findComponent("stageNameTextField");
+        stageNameTextField.onChange = ()->{
+            if (currentStage == null) return;
+            
+            currentStage._data.name = stageNameTextField.text;
+            //currentStage.name = stageNameTextField.text;
+            stageList.text = stageNameTextField.text;
+            stageList.selectedItem.text = stageNameTextField.text;
+            
+        }
+
+        var zoomStepper = stageDataWindow.findComponent("defualtCamZoomStepper");
+        zoomStepper.onChange = ()->{
+            if (currentStage == null) return; 
+            currentStage._data.cameraZoom = zoomStepper.pos;
+            // currentStage.camZoom = zoomStepper.pos;
         }
 
         stageList.selectedItem = { text: "Main Stage" };
@@ -471,6 +894,161 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.alpha = 0.5;
         add(xLine);
 
+        var editCharacterButton = stageDataWindow.findComponent("editCharacterButton");
+        editCharacterButton.onClick = ()->{
+            if (selectedChar == null) {
+                newNotification("Error!", "Please Select a Character First.", NotificationType.Error);
+                return;
+            }
+            editCharacterWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editCharacterWindow"));
+            editCharacterWindow.windowManager = windowManager;
+            add(editCharacterWindow);
+            cancelInput = true;
+
+            var editConfirmButton = editCharacterWindow.findComponent("editCharacterWindowConfirm");
+            bind(editConfirmButton, MouseEvent.CLICK, ()->{
+                cancelInput = false;
+                windowManager.closeWindow(editCharacterWindow);
+                deselectStage();
+                deselectChars();
+                resetChars();
+            });
+
+
+            var getCharData = ()->{
+                switch (selectedCharType) {
+                    case "bf":
+                        return currentStage._data.characters.bf;
+                    case "gf":
+                        return currentStage._data.characters.gf;
+                    case "dad":
+                        return currentStage._data.characters.dad;
+                }
+            }
+
+            xPosStepper = editCharacterWindow.findComponent("editCharacterWindowPosStepperX");
+            xPosStepper.pos = getCharData().position[0];
+            xPosStepper.onChange = ()->{
+                getCharData().position[0] = xPosStepper.pos;
+                resetChars();
+            }
+
+            yPosStepper = editCharacterWindow.findComponent("editCharacterWindowPosStepperY");
+            yPosStepper.pos = getCharData().position[1];
+            yPosStepper.onChange = ()->{
+                getCharData().position[1] = yPosStepper.pos;
+                resetChars();
+            }
+
+            xScrollPosStepper = editCharacterWindow.findComponent("editCharacterWindowScrollStepperX");
+            xScrollPosStepper.pos = getCharData().scroll[0];
+            xScrollPosStepper.onChange = ()->{
+                getCharData().scroll[0] = xScrollPosStepper.pos;
+                resetChars();
+            }
+
+            yScrollPosStepper = editCharacterWindow.findComponent("editCharacterWindowScrollStepperY");
+            yScrollPosStepper.pos = getCharData().scroll[1];
+            yScrollPosStepper.onChange = ()->{
+                getCharData().scroll[1] = yScrollPosStepper.pos;
+                resetChars();
+            }
+
+            scaleStepper = editCharacterWindow.findComponent("editCharacterWindowScaleStepper");
+            scaleStepper.pos = getCharData().scale;
+            scaleStepper.onChange = ()->{
+                getCharData().scale = scaleStepper.pos;
+                resetChars();
+            }
+
+            alphaStepper = editCharacterWindow.findComponent("editCharacterWindowAlphaStepper");
+            alphaStepper.pos = getCharData().alpha;
+            alphaStepper.onChange = ()->{
+                getCharData().alpha = alphaStepper.pos;
+                resetChars();
+            }
+
+            angleStepper = editCharacterWindow.findComponent("editCharacterWindowAngleStepper");
+            angleStepper.pos = getCharData().angle;
+            angleStepper.onChange = ()->{
+                getCharData().alpha = angleStepper.pos;
+                resetChars();
+            }
+
+            zIndexStepper = editCharacterWindow.findComponent("editCharacterWindowZIndexStepper");
+            zIndexStepper.pos = getCharData().zIndex;
+            zIndexStepper.onChange = ()->{
+                getCharData().zIndex = zIndexStepper.pos;
+                resetChars();
+            }
+
+            visibleCheck = editCharacterWindow.findComponent("editCharacterWindowVisibleCheckbox");
+            visibleCheck.selected = switch (selectedCharType) {
+                case "bf":
+                    player.visible;
+                case "gf":
+                    spectator.visible;
+                case "dad":
+                    opponent.visible;
+            }
+            visibleCheck.onChange = ()->{
+                switch (selectedCharType) {
+                    case "bf":
+                        player.visible = visibleCheck.selected;
+                    case "gf":
+                        spectator.visible = visibleCheck.selected;
+                    case "dad":
+                        opponent.visible = visibleCheck.selected;
+                }
+                resetChars();
+            }
+        }
+
+        var musicSlider = menuBar.findComponent("menubarItemVolumeInstrumental");
+        musicSlider.onChange = ()->{
+            FlxG.sound.music.volume = musicSlider.pos/100;
+            menuBar.findComponent("editorMusicVolume").text = "Editor Music - " + Math.round(musicSlider.pos) + "%";
+        }
+
+        var musicMenu = menuBar.findComponent("musicMenu");
+        var folders = [
+            "assets/shared/music/",
+            "assets/music/"
+        ];
+        for (mod in PolymodHandler.getAllMods()) {
+            if (FileUtil.directoryExists("mods/" + mod.id + "/music/")) {
+                folders.push("mods/" + mod.id + "/music/");
+            }
+        }
+        for (folder in folders) {
+            for (file in FileUtil.readDir(folder)) {
+                if (file.endsWith(".ogg") || file == "credits") continue;
+                var name;
+                if (FileUtil.fileExists(folder + file + "/" + file + "-metadata.json")) {
+                    name = Json.parse(FileUtil.readStringFromPath(folder + file + "/" + file + "-metadata.json")).songName;
+                } else {
+                    name = file;
+                }
+                var thing = new MenuItem();
+                thing.text = name;
+                thing.id = file;
+                thing.onClick = ()->{
+                    FunkinSound.playMusic(file, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+                    FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
+                }
+    
+                musicMenu.addComponent(thing);
+            }
+        }
+
+    }
+
+    function reloadStage() {
+        for (i in currentStage.members) {
+            currentStage.remove(i, false);
+        }
+        currentStage.buildStage();
+        currentStage.refresh();
     }
 
     var targetSpriteY = 0;
@@ -479,11 +1057,24 @@ class StageEditorTheSecond extends MusicBeatState {
         super.update();        
         get_conductorInUse().update();
 
-        propListView.disabled = cancelInput;
+        /* propListView.disabled = cancelInput;
         characterListView.disabled = cancelInput;
+        stageList.disabled = cancelInput; */
+        stageDataWindow.disabled = cancelInput;
 
-        if (editPropWindow != null)
+        if (editCharacterWindow != null)
+            editCharacterWindow.screenCenter();
+
+        if (editPropWindow != null) {
             editPropWindow.screenCenter();
+            editPropWindow.x += editPropWindowOffset;
+        }
+
+        if (editAnimationsWindow != null) {
+            editAnimationsWindow.screenCenter();
+            editAnimationsWindow.x += 90;
+            editAnimationsWindow.height = editPropWindow.height;
+        }
 
         if (FlxG.mouse.justPressed) {
             FlxG.sound.play(Paths.sound("click"));
@@ -538,6 +1129,23 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
             }
         }
+
+        if (selectedChar != null && FlxG.mouse.pressed && !cancelInput) {
+            selectedChar.x += FlxG.mouse.deltaX / camGame.zoom;
+            selectedChar.y += FlxG.mouse.deltaY / camGame.zoom;
+            
+            switch (selectedCharType) {
+                case "bf":
+                    currentStage._data.characters.bf.position[0] = Math.round(selectedChar.x) + selectedChar.characterOrigin.x;
+                    currentStage._data.characters.bf.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
+                case "gf":
+                    currentStage._data.characters.gf.position[0] = Math.round(selectedChar.x) + selectedChar.characterOrigin.x;
+                    currentStage._data.characters.gf.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
+                case "dad":
+                    currentStage._data.characters.dad.position[0] = Math.round(selectedChar.x) + selectedChar.characterOrigin.x;
+                    currentStage._data.characters.dad.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
+            }
+        }
     }
 
     function refreshPropList() {
@@ -552,6 +1160,16 @@ class StageEditorTheSecond extends MusicBeatState {
         if (selectedProp != null) {
             for (i in currentStage._data.props) {
                 if (i.name == selectedProp.name) {
+                    return i;
+                }
+            }
+        }
+    }
+
+    function getPropData(id:String) {
+        if (selectedProp != null) {
+            for (i in currentStage._data.props) {
+                if (i.name == id) {
                     return i;
                 }
             }
@@ -614,5 +1232,147 @@ class StageEditorTheSecond extends MusicBeatState {
             type: type ?? "justPressed",
             action: action
         });
+    }
+
+    function templateAnimation() {
+        var index = 0;
+        for (i in getSelectedPropData().animations) {
+            if (StringTools.startsWith(i.name, "New Animation")) {
+                index++;
+            }
+        }
+        return {
+            offsets: [
+                0,
+                0
+            ],
+            prefix: "",
+            frameIndices: [],
+            name: "New Animation" + (index != 0 ? " (" + index + ")" : ""),
+            looped: false,
+            flipX: false,
+            flipY: false,
+            assetPath: null,
+            frameRate: 24
+        }
+    }
+
+    function templateProp() {
+        var theZIndex = 0;
+        var index = 0;
+        for (i in currentStage._data.props) {
+            if (StringTools.startsWith(i.name, "New Prop")) {
+                index++;
+            }
+            if (i.zIndex > theZIndex)
+                theZIndex = i.zIndex;
+        }
+        return {
+            name: "New Prop" + (index != 0 ? " (" + index + ")" : ""),
+            blend: "",
+			color: "#FFFFFF",
+			angle: 0,
+			startingAnimation: null,
+			assetPath: "icons/icon-bf",
+			zIndex: theZIndex + 10,
+			danceEvery: 0,
+			position: [
+				0,
+				0
+			],
+			scale: Reflect.copy(currentStage._data.props[0]).scale,
+			animType: "sparrow",
+			flipX: false,
+			flipY: false,
+			isPixel: false,
+			scroll: [
+				1,
+				1
+			],
+			alpha: 1,
+			animations: []
+        }
+    }
+
+    function stringToIndices(string:String):Array<Int> {
+        string = StringTools.replace(string, " ", "");
+        var split = string.split(",");
+        var indices = [];
+        for (i in split) {
+            if (Std.parseInt(i) != null)
+                indices.push(Std.parseInt(i));
+        }
+        return indices;
+    }
+
+    function resetChars() {
+        if (player != null) {
+            player.zIndex = currentStage._data.characters.bf.zIndex;
+            player.flipX = !player._data.flipX;
+            if (currentStage._data.characters.bf.flipX)
+                player.flipX = !player.flipX;
+            player.x = currentStage._data.characters.bf.position[0] - player.characterOrigin.x;
+            player.y = currentStage._data.characters.bf.position[1] - player.characterOrigin.y;
+            player.scale.x = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
+            player.scale.y = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
+            player.scrollFactor.x = currentStage._data.characters.bf.scroll[0];
+            player.scrollFactor.y = currentStage._data.characters.bf.scroll[1];
+            player.alpha = currentStage._data.characters.bf.alpha;
+            player.angle = currentStage._data.characters.bf.angle;
+    
+            player.cameraFocusPoint.x += currentStage._data.characters.bf.cameraOffsets[0];
+            player.cameraFocusPoint.y += currentStage._data.characters.bf.cameraOffsets[1];
+            
+            if (!currentStage.members.contains(player)) {
+                currentStage.characters.set('bf', player);
+                currentStage.add(player);
+            }
+        }
+        if (opponent != null) {
+            opponent.zIndex = currentStage._data.characters.dad.zIndex;
+            opponent.flipX = opponent._data.flipX;
+            if (currentStage._data.characters.dad.flipX)
+                opponent.flipX = !opponent.flipX;
+            opponent.x = currentStage._data.characters.dad.position[0] - opponent.characterOrigin.x;
+            opponent.y = currentStage._data.characters.dad.position[1] - opponent.characterOrigin.y;
+            opponent.scale.x = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
+            opponent.scale.y = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
+            opponent.scrollFactor.x = currentStage._data.characters.dad.scroll[0];
+            opponent.scrollFactor.y = currentStage._data.characters.dad.scroll[1];
+            opponent.alpha = currentStage._data.characters.dad.alpha;
+            opponent.angle = currentStage._data.characters.dad.angle;
+    
+            opponent.cameraFocusPoint.x += currentStage._data.characters.dad.cameraOffsets[0];
+            opponent.cameraFocusPoint.y += currentStage._data.characters.dad.cameraOffsets[1];
+            
+            if (!currentStage.members.contains(opponent)) {
+                currentStage.characters.set('dad', opponent);
+                currentStage.add(opponent);
+            }
+        }
+
+        if (spectator != null) {
+            spectator.zIndex = currentStage._data.characters.gf.zIndex;
+            spectator.flipX = spectator._data.flipX;
+            if (currentStage._data.characters.gf.flipX)
+                spectator.flipX = !spectator.flipX;
+            spectator.x = currentStage._data.characters.gf.position[0] - spectator.characterOrigin.x;
+            spectator.y = currentStage._data.characters.gf.position[1] - spectator.characterOrigin.y;
+            spectator.scale.x = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
+            spectator.scale.y = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
+            spectator.scrollFactor.x = currentStage._data.characters.gf.scroll[0];
+            spectator.scrollFactor.y = currentStage._data.characters.gf.scroll[1];
+            spectator.alpha = currentStage._data.characters.gf.alpha;
+            spectator.angle = currentStage._data.characters.gf.angle;
+    
+            spectator.cameraFocusPoint.x += currentStage._data.characters.gf.cameraOffsets[0];
+            spectator.cameraFocusPoint.y += currentStage._data.characters.gf.cameraOffsets[1];
+            
+            if (!currentStage.members.contains(spectator)) {
+                currentStage.characters.set('gf', spectator);
+                currentStage.add(spectator);
+            }
+        }
+        currentStage.refresh();
     }
 }
