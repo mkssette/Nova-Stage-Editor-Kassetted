@@ -756,6 +756,15 @@ class StageEditorTheSecond extends MusicBeatState {
                 if (isProp)
                     i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
 
+                if (player != null) 
+                    player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
+
+                if (opponent != null)
+                    opponent.alpha = (opponent._data.alpha ?? 1) * (target ?? 1);
+
+                if (spectator != null)
+                    spectator.alpha = (spectator._data.alpha ?? 1) * (target ?? 1);
+
                 index++;
             }
         };
@@ -764,15 +773,6 @@ class StageEditorTheSecond extends MusicBeatState {
             characterListView.selectedItems = [];
             selectedChar = null;
             selectedCharType = "none";
-
-            if (player != null) 
-                player.alpha = player._data.alpha ?? 1;
-
-            if (opponent != null)
-                opponent.alpha = opponent._data.alpha ?? 1;
-
-            if (spectator != null)
-                spectator.alpha = spectator._data.alpha ?? 1;
             /* selectedProp = null;
             for (i in currentStage.members) {
                 i.alpha = 1;
