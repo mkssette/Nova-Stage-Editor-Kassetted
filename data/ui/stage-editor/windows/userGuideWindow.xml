@@ -68,6 +68,28 @@
             </tableview>
         </box>
         
+        <box text="Change Log">
+            <vbox>
+                <frame text="v2.0.1" width="449"><vbox>
+                    <label text="—— Fixes ——"/>
+                    <spacer />
+                    <label text="• Fixed Scaling Props Not Working."/>
+                    <spacer />
+                    <spacer />
+                    <label text="—— Additions ——"/>
+                    <spacer />
+                    <label text="• Changelog tab in User Guide window."/>
+                    <spacer />
+                </vbox></frame>
+                <frame text="v2.0.0" width="449"><vbox>
+                    <label text="—— Additions ——"/>
+                    <spacer />
+                    <label text="• Initial Release."/>
+                    <spacer />
+                </vbox></frame>
+            </vbox>
+        </box>
+
         <box text="To-Do">
             <vbox>
                 <label text="—— To Be Added ——"/>
