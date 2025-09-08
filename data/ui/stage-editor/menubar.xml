@@ -37,7 +37,12 @@
     </menu>
 
     <menu text="Audio" width="300">
-        <menu text="Editor Music" id="musicMenu">
+        <menu text="Editor Music">
+            <vbox width="100%">
+                <listview id="musicMenu" width="300" height="400" selectedIndex="0">
+
+                </listview>
+            </vbox>
         </menu>
         <vbox width="100%" style="padding: 12px;">
             <menu-separator />

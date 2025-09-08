@@ -26,11 +26,10 @@
     <vbox width="100%">
         <label text="Props:" style="padding: 2px;" verticalAlign="center"/>
         <listview id="propsListView" width="100%" height="180" selectedIndex="0">
-            <!-- <item-renderer width="100%" layout="horizontal">
-               <label id="text" width="100%" verticalAlign="center" />
-               <button id="theButton" iconPosition="center" width="30" height="30" icon="assets/images/icons/icon-bf.png" style="filter: tint(#FFFF00, 100);"/>
-               <button id="theDeleteButton" text="Delete" width="30" />
-           </item-renderer> -->
+            <item-renderer width="100%" layout="horizontal">
+               <label id="text" width="100%" verticalAlign="center"/>
+               <checkbox id="visible" selected="true" />
+           </item-renderer>
             <data>
                 <item text="Test"/>
             </data>
@@ -47,10 +46,14 @@
     <vbox width="100%">
         <label text="Characters:" style="padding: 2px;" verticalAlign="center"/>
         <listview id="charactersListView" width="100%" selectedIndex="0">
+            <item-renderer width="100%" layout="horizontal">
+               <label id="text" width="100%" verticalAlign="center" />
+               <checkbox id="visible" selected="true" />
+           </item-renderer>
             <data>
-                <item text="Player"/>
-                <item text="Opponent"/>
-                <item text="Spectator"/>
+                <item text="Player" visible="true"/>
+                <item text="Opponent" visible="true"/>
+                <item text="Spectator" visible="true"/>
             </data>
         </listview>
     </vbox>

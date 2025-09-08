@@ -85,11 +85,14 @@ import flixel.util.FlxTimer;
 
 import funkin.play.character.CharacterType;
 
+
+
 import haxe.Json;
 
 import StringTools;
 import Reflect;
 import Math;
+
 
 using StringTools;
 
@@ -439,6 +442,12 @@ class StageEditorTheSecond extends MusicBeatState {
                 windowManager.closeWindow(userGuideWindow);
                 cancelInput = false;
             }
+            
+            for (i in ["joinNovaButton", "joinNetworkButton"]) {
+                userGuideWindow.findComponent(i).onClick = ()->{
+                    FlxG.openURL(userGuideWindow.findComponent(i).tooltip);
+                }
+            }
         }
 
         newKeybind(["F1"], userGuideCallback, "justPressed");
@@ -474,7 +483,10 @@ class StageEditorTheSecond extends MusicBeatState {
             propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
         }
         bind(deletePropButton, MouseEvent.CLICK, deletePropCallback);
-        newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
+        newKeybind(["DELETE"], ()->{
+            if (!cancelInput)
+                deletePropCallback();
+        });
 
 
         var newPropButton = stageDataWindow.findComponent("createPropButton");
@@ -798,7 +810,7 @@ class StageEditorTheSecond extends MusicBeatState {
                     if (assetPathTextField.text == "") {
                         newNotification("Error!", '"Asset Path" must not be blank.', NotificationType.Error);
                     }
-                    if (nameTextField.text != "" && assetPathTextField.text != "") {
+                    if (nameTextField.text != "" && assetPathTextField.text != "" && checkImageExists(assetPathTextField.text)) {
                         cancelInput = false;
                         windowManager.closeWindow(editPropWindow);
                         if (editAnimationsWindow != null)
@@ -812,6 +824,9 @@ class StageEditorTheSecond extends MusicBeatState {
                         resetChars();
                         editAnimToggle = false;
                         FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                    } else if (!checkImageExists(assetPathTextField.text)) {
+                        FlxTween.color(assetPathTextField, 1.0, FlxColor.RED, FlxColor.WHITE);
+                        newNotification("Error!", '"Asset Path" is not valid.', NotificationType.Error);
                     }
                 });
             }
@@ -958,7 +973,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 clickIndex = 0;
             });
             if (clickIndex == 2) {
-                editPropCallback();
+                if (selectedProp != null) {
+                    editPropCallback();
+                }
             }
         }
 
@@ -985,6 +1002,7 @@ class StageEditorTheSecond extends MusicBeatState {
         newKeybind(["ESCAPE"], deselectChars);
 
         stageList.onChange = ()->{
+            if (stageList.selectedItem.id == null) return;
             if (members.contains(currentStage)) {
                 remove(currentStage);
             }
@@ -1039,8 +1057,10 @@ class StageEditorTheSecond extends MusicBeatState {
         newKeybind(["S"], () -> !cancelInput ? camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
         newKeybind(["D"], () -> !cancelInput ? camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
 
-        newKeybind(["Q"], () -> !cancelInput ? camGame.zoom -= 0.05 : 0, "pressed");
-        newKeybind(["E"], () -> !cancelInput ? camGame.zoom += 0.05 : 0, "pressed");
+        newKeybind(["Q"], () -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom -= 0.05 : 0, "pressed");
+        newKeybind(["E"], () -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom += 0.05 : 0, "pressed");
+
+        newKeybind(["CONTROL", "E"], ()->camHUD.visible = !camHUD.visible);
 
         camGame.scroll.x = -FlxG.width/2;
         camGame.scroll.y = -FlxG.height/2;
@@ -1186,6 +1206,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         var musicMenu = menuBar.findComponent("musicMenu");
+        musicMenu.dataSource.add({text: "Freaky Menu", id: "freakyMenu"});
         var folders = [
             "assets/shared/music/",
             "assets/music/"
@@ -1197,22 +1218,28 @@ class StageEditorTheSecond extends MusicBeatState {
         }
         for (folder in folders) {
             for (file in FileUtil.readDir(folder)) {
-                if (file.endsWith(".ogg") || file == "credits") continue;
+                if (file.endsWith(".ogg") || file == "credits" || file == "freakyMenu" || file == "gameplay") continue;
                 var name;
                 if (FileUtil.fileExists(folder + file + "/" + file + "-metadata.json")) {
                     name = Json.parse(FileUtil.readStringFromPath(folder + file + "/" + file + "-metadata.json")).songName;
                 } else {
                     name = file;
                 }
-                var thing = new MenuItem();
+
+                musicMenu.dataSource.add({text: name, id: file});
+                musicMenu.onChange = ()->{
+                    FunkinSound.playMusic(musicMenu.selectedItem.id, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+                    // FlxG.sound.music.fadeIn(0.5, 0, 1);
+                }
+                /* var thing = new MenuItem();
                 thing.text = name;
                 thing.id = file;
                 thing.onClick = ()->{
                     FunkinSound.playMusic(file, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
-                    FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
-                }
+                    FlxG.sound.music.fadeIn(0.5, 0, 1);
+                } */
     
-                musicMenu.addComponent(thing);
+                //musicMenu.addComponent(thing);
             }
         }
 
@@ -1243,6 +1270,23 @@ class StageEditorTheSecond extends MusicBeatState {
         super.update();        
         get_conductorInUse().update();
 
+        for (i in 0...propListView.dataSource.size) {
+            var item = propListView.dataSource.get(i);
+            currentStage.getNamedProp(item.text).visible = item.visible;
+        }
+
+        for (i in 0...characterListView.dataSource.size) {
+            var item = characterListView.dataSource.get(i);
+            switch (item.text) {
+                case "Player":
+                    player.visible = item.visible;
+                case "Opponent":
+                    opponent.visible = item.visible;
+                case "Spectator":
+                    spectator.visible = item.visible;
+            }
+        }
+
         /* propListView.disabled = cancelInput;
         characterListView.disabled = cancelInput;
         stageList.disabled = cancelInput; */
@@ -1272,6 +1316,27 @@ class StageEditorTheSecond extends MusicBeatState {
 
         if (FlxG.mouse.justPressed) {
             FlxG.sound.play(Paths.sound("click"));
+            var circleSprite = new FlxShapeCircle(0, 0, 5, {
+                thickness: 2,
+                color: FlxColor.WHITE,
+                pixelHinting: false,
+                scaleMode: null,
+                capsStyle: null,
+                jointStyle: null,
+                miterLimit: 200
+            }, FlxColor.TRANSPARENT);
+            circleSprite.antialiasing = true;
+            
+            circleSprite.x = FlxG.mouse.x - (circleSprite.radius) + 3;
+            circleSprite.y = FlxG.mouse.y - (circleSprite.radius) + 3; 
+            add(circleSprite);
+
+            FlxTween.num(5, 20, 0.2, {}, function(num) { 
+                circleSprite.radius = num;
+                circleSprite.x = FlxG.mouse.x - (circleSprite.radius) + 3;
+                circleSprite.y = FlxG.mouse.y - (circleSprite.radius) + 3; 
+            });
+            FlxTween.tween(circleSprite, { alpha: 0 }, 0.2);
         }
 
         for (keybind in keybinds) {
@@ -1305,6 +1370,7 @@ class StageEditorTheSecond extends MusicBeatState {
         yLine.updateHitbox();
         yLine.x = -yLine.width/2;
         yLine.scrollFactor.y = 0;
+        yLine.visible = camHUD.visible;
 
         xLine.scale.y = 1.5 * (1/camGame.zoom);
         xLine.scale.x = FlxG.width * (1/camGame.zoom);
@@ -1312,6 +1378,7 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.updateHitbox();
         xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
+        xLine.visible = camHUD.visible;
 
         if (selectedProp != null && FlxG.mouse.pressed && !cancelInput) {
             selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
@@ -1340,13 +1407,13 @@ class StageEditorTheSecond extends MusicBeatState {
                     currentStage._data.characters.dad.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
             }
         }
+
     }
 
     function refreshPropList() {
         propListView.dataSource.clear();
-
         for (i in currentStage._data.props) {
-            propListView.dataSource.add({ text: i.name });
+            propListView.dataSource.add({ text: i.name, visible: true });
         }
     }
 
@@ -1596,5 +1663,27 @@ class StageEditorTheSecond extends MusicBeatState {
                 stageList.dataSource.add({ text: stageRegistry.entries.get(i).stageName, id: i });
             }
         }
+    }
+
+    function checkImageExists(id:String) {
+        var fileExists = false;
+        var foldersToCheck = [
+            "assets/",
+            "assets/" + currentStage._data.directory + "/",
+        ];
+
+        for (mod in PolymodHandler.getAllMods()) {
+            foldersToCheck.push("mods/" + mod.id + "/");
+        }
+
+        for (i in foldersToCheck) {
+            if (FileUtil.fileExists(i + "images/" + id + ".png") || FileUtil.directoryExists(i + "images/" + id))
+                fileExists = true;
+            
+            if (FileUtil.fileExists(i + "shared/images/" + id + ".png") || FileUtil.directoryExists(i + "images/" + id))
+                fileExists = true;
+        }
+
+        return fileExists;
     }
 }
