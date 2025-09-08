@@ -1,55 +1,65 @@
-<window title="User Guide" width="500" height="600" maximizable="false" minimizable="false" collapsable="false" closable="false" >
+<window title="User Guide" width="500" height="600" maximizable="false" minimizable="false"
+    collapsable="false" closable="false">
     <style>
         .discord-card {
-            background: #313234;
-            border-radius: 10px;
+        background: #313234;
+        border-radius: 10px;
         }
-        
+
         .discord-button {
-            background: #00863a;
-            border: none;
-            border-radius: 15px;
-            color: white;
-            font-name:'fonts/gintoRegular.ttf';
+        background: #00863a;
+        border: none;
+        border-radius: 15px;
+        color: white;
+        font-name:'fonts/gintoRegular.ttf';
         }
 
         .discord-button:hover {
-            background: #057834
+        background: #057834
         }
 
         .discord-button:down {
-            background: #02662c
+        background: #02662c
         }
     </style>
-    
-    <tabview id="tv2" width="100%" height="100%" >
+
+    <tabview id="tv2" width="100%" height="100%">
         <box text="Guide">
-            <label text="Try again later.\n\nCheck boxes next to props/characters toggles the visiblity IN \nTHE EDITOR." style="padding: 2px;" verticalAlign="center"/>
+            <vbox width="100%">
+                <label
+                    text="Welcome to the User Guide for the Nova Stage Editor! In the \nUser Guide you'll be able to learn basic use and functionality \nof the Stage Editor. Not only that but you'll also find useful \ntips and tricks you can use while creating/editing stages."
+                    style="padding: 2px;" verticalAlign="center" />
+                <spacer height="10" />
+                <label text="To get started, click on one of the taps at the top of window!"
+                    style="padding: 2px;" verticalAlign="center" />
+                <spacer height="310" />
+                <label text="- GENZU" style="padding: 2px;" verticalAlign="center" />
+            </vbox>
         </box>
 
         <box text="Keybinds">
             <tableview width="450" height="445" contentWidth="100%">
                 <header width="100%">
-                    <column id="action" text="Action" width="50%"/>
-                    <column id="keybind" text="Keybind" width="50%"/>
+                    <column id="action" text="Action" width="50%" />
+                    <column id="keybind" text="Keybind" width="50%" />
                 </header>
                 <data>
-                    <item action="Show User Guide" keybind="F1"/>
-                    <item action="New Stage" keybind="Ctrl + N"/>
-                    <item action="Save Stage" keybind="Ctrl + S"/>
-                    <item action="Save Stage As" keybind="Ctrl + Shift + S"/>
-                    <item action="Exit To Menu" keybind="Ctrl + Q"/>
+                    <item action="Show User Guide" keybind="F1" />
+                    <item action="New Stage" keybind="Ctrl + N" />
+                    <item action="Save Stage" keybind="Ctrl + S" />
+                    <item action="Save Stage As" keybind="Ctrl + Shift + S" />
+                    <item action="Exit To Menu" keybind="Ctrl + Q" />
 
-                    <item action="Toggle HUD Visibilty" keybind="Ctrl + E"/>
-                    
-                    <item action="Set Zoom to Stage Zoom" keybind="Ctrl + Shift + R"/>
+                    <item action="Toggle HUD Visibilty" keybind="Ctrl + E" />
 
-                    <item action="Move Camera" keybind="W, A, S, D"/>
-                    <item action="Zoom Camera" keybind="Q, E"/>
+                    <item action="Set Zoom to Stage Zoom" keybind="Ctrl + Shift + R" />
 
-                    <item action="Deselect Prop/Character" keybind="Esc"/>
-                    <item action="Deleted Selected Prop" keybind="Del"/>
-                    <item action="Move Selected Prop/Character" keybind="Left Click + Drag"/>
+                    <item action="Move Camera" keybind="W, A, S, D" />
+                    <item action="Zoom Camera" keybind="Q, E" />
+
+                    <item action="Deselect Prop/Character" keybind="Esc" />
+                    <item action="Deleted Selected Prop" keybind="Del" />
+                    <item action="Move Selected Prop/Character" keybind="Left Click + Drag" />
 
                 </data>
             </tableview>
@@ -58,81 +68,118 @@
         <box text="Credits">
             <tableview width="450" height="445" contentWidth="100%">
                 <header width="100%">
-                    <column id="action" text="Name" width="50%"/>
-                    <column id="keybind" text="Role" width="50%"/>
+                    <column id="action" text="Name" width="50%" />
+                    <column id="keybind" text="Role" width="50%" />
                 </header>
                 <data>
-                    <item action="Nebula S. Nova" keybind="Main Coder, Lofi Freaky Menu"/>
-                    <item action="GENZU" keybind="Coded The UI"/>
+                    <item action="Nebula S. Nova" keybind="Main Coder, Lofi Freaky Menu" />
+                    <item action="GENZU" keybind="Coded The UI" />
                 </data>
             </tableview>
         </box>
-        
+
         <box text="Change Log">
             <vbox>
-                <frame text="v2.0.1" width="449"><vbox>
-                    <label text="—— Fixes ——"/>
-                    <spacer />
-                    <label text="• Fixed Scaling Props Not Working."/>
-                    <spacer />
-                    <spacer />
-                    <label text="—— Additions ——"/>
-                    <spacer />
-                    <label text="• Changelog tab in User Guide window."/>
-                    <spacer />
-                </vbox></frame>
-                <frame text="v2.0.0" width="449"><vbox>
-                    <label text="—— Additions ——"/>
-                    <spacer />
-                    <label text="• Initial Release."/>
-                    <spacer />
-                </vbox></frame>
+                <frame text="v2.0.1" width="449">
+                    <vbox>
+                        <label text="—— Fixes ——" />
+                        <spacer />
+                        <label text="• Fixed Scaling Props Not Working." />
+                        <spacer />
+                        <spacer />
+                        <label text="—— Additions ——" />
+                        <spacer />
+                        <label text="• Changelog tab in User Guide window." />
+                        <spacer />
+                    </vbox>
+                </frame>
+                <frame text="v2.0.0" width="449">
+                    <vbox>
+                        <label text="—— Additions ——" />
+                        <spacer />
+                        <label text="• Initial Release." />
+                        <spacer />
+                    </vbox>
+                </frame>
             </vbox>
         </box>
 
         <box text="To-Do">
             <vbox>
-                <label text="—— To Be Added ——"/>
+                <label text="—— To Be Added ——" />
                 <spacer />
-                <label text="• View From Character."/>
-                <label text="• Editor Updating System."/>
-                <label text="• Export to Psych/CNE."/>
+                <label text="• View From Character." />
+                <label text="• Editor Updating System." />
+                <label text="• Export to Psych/CNE." />
             </vbox>
         </box>
 
         <box text="Discord">
             <vbox>
                 <!-- tooltip="For more help with the editor join this server." -->
-               <!--  <label text="Nova Editor Server:"/>
+                <!--  <label text="Nova Editor Server:"/>
                 <label text="https://discord.gg/MTMRYc63Dj"/> -->
                 <card width="450" styleName="discord-card">
                     <vbox>
-                        <label text="Nova Utils Server" style="font-name:'fonts/gintoMedium.ttf';color: white;"/>
-                        <box height="2"/>
-                        <label text="For more help with the editor" style="font-name:'fonts/gintoRegular.ttf'"/>
-                        <label text="join this server!" style="font-name:'fonts/gintoRegular.ttf'"/>
-                        <box height="2"/>
-                        <button id="joinNovaButton" styleName="discord-button" width="420" text="Join" tooltip="https://discord.gg/MTMRYc63Dj" style="font-name:'fonts/gintoRegular.ttf'"/>
+                        <label text="Nova Utils Server"
+                            style="font-name:'fonts/gintoMedium.ttf';color: white;" />
+                        <box height="2" />
+                        <label text="For more help with the editor"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
+                        <label text="join this server!" style="font-name:'fonts/gintoRegular.ttf'" />
+                        <box height="2" />
+                        <button id="joinNovaButton" styleName="discord-button" width="420"
+                            text="Join" tooltip="https://discord.gg/MTMRYc63Dj"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
                     </vbox>
                 </card>
-                <spacer height="3"/>
+                <spacer height="3" />
                 <card width="450" styleName="discord-card">
                     <vbox>
-                        <label text="V-Slice Network" style="font-name:'fonts/gintoMedium.ttf';color: white;"/>
-                        <box height="2"/>
-                        <label text="For help related to V-Slice Modding" style="font-name:'fonts/gintoRegular.ttf'"/>
-                        <label text="join this server!" style="font-name:'fonts/gintoRegular.ttf'"/>
-                        <box height="2"/>
-                        <button id="joinNetworkButton" styleName="discord-button" width="420" text="Join" tooltip="https://discord.gg/ca2Kb6kukm" style="font-name:'fonts/gintoRegular.ttf'"/>
+                        <label text="V-Slice Network"
+                            style="font-name:'fonts/gintoMedium.ttf';color: white;" />
+                        <box height="2" />
+                        <label text="For help related to V-Slice Modding"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
+                        <label text="join this server!" style="font-name:'fonts/gintoRegular.ttf'" />
+                        <box height="2" />
+                        <button id="joinNetworkButton" styleName="discord-button" width="420"
+                            text="Join" tooltip="https://discord.gg/ca2Kb6kukm"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
                     </vbox>
                 </card>
 
             </vbox>
         </box>
 
+        <box text="FAQ">
+            <vbox>
+                <frame text=" - General Troubleshooting - " width="449">
+                    <vbox>
+                        <label text=" • Make sure your mod has a valid '_polymod_meta.json'." />
+                    </vbox>
+                </frame>
+                <frame text=" - Stage Isn't Showing Up - " width="449">
+                    <vbox>
+                        <label text=" • The stage MUST be placed in the 'stages' folder inside of \n   'data' folder: 'data/stages/yourStage.json'." />
+                    </vbox>
+                </frame>
+                <frame text=" - Asset Path is Invalid - " width="449">
+                    <vbox>
+                        <label text=" • Images must be placed in either the 'images/' folder \n   or the 'shared/images/' folder." />
+                        <spacer />
+                        <label text=" • When typing the Asset Path make sure you are using \n   foward slashes: Use '/' NOT '\'." />
+                        <spacer />
+                        <label text=" • When typing the Asset Path you do NOT need to include \n   'images/' or 'shared/images/' as the editor does that \n   automatically." />
+                        <spacer />
+                    </vbox>
+                </frame>
+            </vbox>
+        </box>
+
     </tabview>
     <window-footer width="100%">
-        <spacer width="100%"/>
-        <button id="closeButton" text="Close"/>
+        <spacer width="100%" />
+        <button id="closeButton" text="Close" />
     </window-footer>
 </window>
