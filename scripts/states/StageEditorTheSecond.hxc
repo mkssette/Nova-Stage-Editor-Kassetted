@@ -1314,14 +1314,12 @@ class StageEditorTheSecond extends MusicBeatState {
                         case "dad":
                             char = opponent;
                     }
-                    if (char.name == "Boyfriend")
-                        CharacterEditorV3.startingChar = { text: "Boyfriend", id: "bf" };
-                    else if (char.name == "Girlfriend")
-                        CharacterEditorV3.startingChar = { text: "Girlfriend", id: "gf" };
-                    else if (char.name == "Tankman")
-                        CharacterEditorV3.startingChar = { text: "Tankman", id: "tankman" };
-                    else
-                        CharacterEditorV3.startingChar = { text: char.name, id: char?.id ?? "bf" };
+                    
+                    for (i in CharacterDataParser.characterCache.keys()) {
+                        if (CharacterDataParser.characterCache.get(i).name == char.name) {
+                            CharacterEditorV3.startingChar = { text: char.name, id: i };
+                        }
+                    }
 
                     CharacterEditorV3.skipPreloading = true;
                     FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV3'));
