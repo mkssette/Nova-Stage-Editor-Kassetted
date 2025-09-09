@@ -99,6 +99,7 @@ import Math;
 import haxe.ds.Either;
 
 import funkin.modding.base.ScriptedFlxSpriteGroup;
+import funkin.modding.base.ScriptedMusicBeatState;
 
 using StringTools;
 
@@ -155,7 +156,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var stageIdList = [];
 
-    var editorVersion = "2.0.3";
+    var editorVersion = "2.0.4-beta";
     var editorTitle = "Nova Stage Editor";
     var editorFolder = "??";
 
@@ -205,7 +206,9 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var editAnimationCallback;
 
-     var blacklist = [
+    var hasCharacterEditorInstalled:Bool = false;
+
+    var blacklist = [
             "Main Stage",
             "Main Stage [Erect]",
             
@@ -360,6 +363,9 @@ class StageEditorTheSecond extends MusicBeatState {
         for (i in PolymodHandler.getAllMods()) {
             if (i.title == editorTitle) {
                 editorFolder = i.id;
+            } 
+            if (i.title == "Nova Character Editor REFRESHED") {
+                hasCharacterEditorInstalled = true;
             }
         }
 
@@ -1026,6 +1032,7 @@ class StageEditorTheSecond extends MusicBeatState {
             for (i in CharacterDataParser.characterCache.keys()) {
                 if (CharacterDataParser.characterCache.get(i).name == playerDropdown.selectedItem.text) {
                     player = CharacterDataParser.fetchCharacter(i);
+                    player.debug = true;
                     resetChars();
                     break;
                 }
@@ -1040,6 +1047,7 @@ class StageEditorTheSecond extends MusicBeatState {
             for (i in CharacterDataParser.characterCache.keys()) {
                 if (CharacterDataParser.characterCache.get(i).name == opponentDropdown.selectedItem.text) {
                     opponent = CharacterDataParser.fetchCharacter(i);
+                    opponent.debug = true;
                     resetChars();
                     break;
                 }
@@ -1054,6 +1062,7 @@ class StageEditorTheSecond extends MusicBeatState {
             for (i in CharacterDataParser.characterCache.keys()) {
                 if (CharacterDataParser.characterCache.get(i).name == spectatorDropdown.selectedItem.text) {
                     spectator = CharacterDataParser.fetchCharacter(i);
+                    spectator.debug = true;
                     resetChars();
                     break;
                 }
@@ -1289,6 +1298,35 @@ class StageEditorTheSecond extends MusicBeatState {
             
             add(editCharacterWindow);
             cancelInput = true;
+
+            //hasCharacterEditorInstalled = false;
+            editCharacterWindow.findComponent("editCharaterWindowOpenEditor").disabled = !hasCharacterEditorInstalled;
+            if (!hasCharacterEditorInstalled) {
+                editCharacterWindow.findComponent("editorBox").tooltip = "Nova Character Editor is Not Installed";
+            } else {
+                editCharacterWindow.findComponent("editCharaterWindowOpenEditor").onClick = ()->{
+                    var char; 
+                    switch (selectedCharacterType) {
+                        case "bf":
+                            char = player;
+                        case "gf":
+                            char = spectator;
+                        case "dad":
+                            char = opponent;
+                    }
+                    if (char.name == "Boyfriend")
+                        CharacterEditorV3.startingChar = { text: "Boyfriend", id: "bf" };
+                    else if (char.name == "Girlfriend")
+                        CharacterEditorV3.startingChar = { text: "Girlfriend", id: "gf" };
+                    else if (char.name == "Tankman")
+                        CharacterEditorV3.startingChar = { text: "Tankman", id: "tankman" };
+                    else
+                        CharacterEditorV3.startingChar = { text: char.name, id: char?.id ?? "bf" };
+
+                    CharacterEditorV3.skipPreloading = true;
+                    FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV3'));
+                }
+            }
 
 
             var editConfirmButton = editCharacterWindow.findComponent("editCharacterWindowConfirm");
@@ -1713,7 +1751,7 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
         xLine.visible = camHUD.visible;
-
+ 
         
         if (selectedProp != null /* && FlxG.mouse.pressed */ && !cancelInput) {
             for (i in currentStage._data.props) {
