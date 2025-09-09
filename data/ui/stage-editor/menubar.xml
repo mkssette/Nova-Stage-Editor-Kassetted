@@ -21,6 +21,13 @@
         <menu-separator />
         <menu-item id="exitToMenu" text="Exit To Menu" shortcutText="Ctrl + Q" />
     </menu>
+
+    <!-- <menu text="Edit" width="300">
+        <menu-item id="undo" text="Undo" shortcutText="Ctrl + Z"/>
+        <menu-item id="redo" text="Redo" shortcutText="Ctrl + Y"/>
+
+        I couldn't get onClick to work so I'm removing this
+    </menu> -->
     <!-- <menu text="Windows">
     <menu-item id="stageDataWindow" text="Stage Data" />
   </menu> -->

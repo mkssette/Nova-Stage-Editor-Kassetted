@@ -61,6 +61,9 @@
                     <item action="Deleted Selected Prop" keybind="Del" />
                     <item action="Move Selected Prop/Character" keybind="Left Click + Drag" />
 
+                    <item action="Undo" keybind="Ctrl + Z" />
+                    <item action="Redo" keybind="Ctrl + Y" />
+
                 </data>
             </tableview>
         </box>
@@ -79,47 +82,57 @@
         </box>
 
         <box text="Change Log">
-            <vbox>
-                <frame text="v2.0.2" width="449">
-                    <vbox>
-                        <label text="—— Fixes ——" />
-                        <spacer />
-                        <label text="• Fixed Camera Movement Being Framerate Dependent." />
-                        <spacer />
-                        <spacer />
-                        <label text="—— Additions ——" />
-                        <spacer />
-                        <label text="• Added Prop Transform Tool." />
-                        <label text="• Added FAQ Tab in User Guide." />
-                        <spacer />
-                        <label text="—— Tweaks ——" />
-                        <spacer />
-                        <label text="• Made Prop Scaling Use X AND Y Instead of Just 1 Value." />
-                        <spacer />
-                    </vbox>
-                </frame>
-                <frame text="v2.0.1" width="449">
-                    <vbox>
-                        <label text="—— Fixes ——" />
-                        <spacer />
-                        <label text="• Fixed Scaling Props Not Working." />
-                        <spacer />
-                        <spacer />
-                        <label text="—— Additions ——" />
-                        <spacer />
-                        <label text="• Changelog tab in User Guide window." />
-                        <spacer />
-                    </vbox>
-                </frame>
-                <frame text="v2.0.0" width="449">
-                    <vbox>
-                        <label text="—— Additions ——" />
-                        <spacer />
-                        <label text="• Initial Release." />
-                        <spacer />
-                    </vbox>
-                </frame>
-            </vbox>
+            <scroll-view width="449" height="445" contentWidth="100%">
+                <vbox>
+                    <frame text="v2.0.3" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added Undo/Redo history." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.2" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed Camera Movement Being Framerate Dependent." />
+                            <spacer />
+                            <spacer />
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added Prop Transform Tool." />
+                            <label text="• Added FAQ Tab in User Guide." />
+                            <spacer />
+                            <label text="—— Tweaks ——" />
+                            <spacer />
+                            <label text="• Made Prop Scaling Use X AND Y Instead of Just 1 Value." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.1" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed Scaling Props Not Working." />
+                            <spacer />
+                            <spacer />
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Changelog tab in User Guide window." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.0" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Initial Release." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                </vbox>
+            </scroll-view>
         </box>
 
         <box text="To-Do">
