@@ -84,13 +84,17 @@
                     <vbox>
                         <label text="—— Fixes ——" />
                         <spacer />
-                        <label text="• Fixed Camera Movement Being Framerate Dependant." />
+                        <label text="• Fixed Camera Movement Being Framerate Dependent." />
                         <spacer />
                         <spacer />
                         <label text="—— Additions ——" />
                         <spacer />
                         <label text="• Added Prop Transform Tool." />
                         <label text="• Added FAQ Tab in User Guide." />
+                        <spacer />
+                        <label text="—— Tweaks ——" />
+                        <spacer />
+                        <label text="• Made Prop Scaling Use X AND Y Instead of Just 1 Value." />
                         <spacer />
                     </vbox>
                 </frame>
