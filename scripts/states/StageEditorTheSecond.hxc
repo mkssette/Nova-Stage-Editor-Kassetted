@@ -87,6 +87,9 @@ import funkin.play.character.CharacterType;
 
 import funkin.modding.base.ScriptedFlxRuntimeShader;
 
+import flixel.math.FlxAngle;
+import flixel.math.FlxPoint;
+
 import haxe.Json;
 
 import StringTools;
@@ -95,12 +98,43 @@ import Math;
 
 import haxe.ds.Either;
 
+import funkin.modding.base.ScriptedFlxSpriteGroup;
 
 using StringTools;
 
 class StageEditorTheSecond extends MusicBeatState {
 
     var outlineShader = ScriptedFlxRuntimeShader.init('WhiteOutlineRuntimeShader');
+
+    // --  Lines  -- \\
+    var lL;
+    var tL;
+    var rL;
+    var bL;
+
+    // -- Edge Cs -- \\
+    var tLC;
+    var tLCi;
+    var tMC;
+    var tMCi;
+    var tRC;
+    var tRCi;
+
+    var mLC;
+    var mLCi;
+    var mRC;
+    var mRCi;
+    
+    var bLC;
+    var bLCi;
+    var bMC;
+    var bMCi;
+    var bRC;
+    var bRCi;
+
+    // --  Other -- \\
+    var cC;
+    var rC;
 
     var stageRegistry;
     var customStageRegistry = [
@@ -118,7 +152,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var stageIdList = [];
 
-    var editorVersion = "2.0.1";
+    var editorVersion = "2.0.2";
     var editorTitle = "Nova Stage Editor";
     var editorFolder = "??";
 
@@ -128,6 +162,7 @@ class StageEditorTheSecond extends MusicBeatState {
 	var windowManager = new WindowManager();
 
 	var camHUD:FlxCamera;
+	var camInteract:FlxCamera;
 	var camGame:FlxCamera;
     var camBackground:FlxCamera;
 
@@ -216,6 +251,10 @@ class StageEditorTheSecond extends MusicBeatState {
         camGame.bgColor = 0x00000000;
         FlxG.cameras.add(camGame, false);
 
+        camInteract = new FlxCamera();
+        camInteract.bgColor = 0x00000000;
+        FlxG.cameras.add(camInteract, false);
+
         camHUD = new FlxCamera();
         camHUD.bgColor = 0x00000000;
         FlxG.cameras.add(camHUD, true);
@@ -258,6 +297,28 @@ class StageEditorTheSecond extends MusicBeatState {
         newKeybind(["CONTROL", "SHIFT", "R"], resetCameraCallback);
 
         add(menuBar);
+
+        var saveStageAsButton = menuBar.findComponent("saveStageAs");
+        var saveStageAsCallback = ()->{
+            var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/saveAsDialog"));
+            add(newStageDialog);
+            newStageDialog.screenCenter();
+            newStageDialog.showDialog(false);
+            cancelInput = true;
+
+            for (i in PolymodHandler.getAllMods()) {
+			    newStageDialog.findComponent("modFolderList").dataSource.add({ text: i.title + " (" + i.id + ")" });
+            }
+            newStageDialog.findComponent("modFolderList").selectedItem = { text: "None" };
+
+            var cancelButton = newStageDialog.findComponent("dialogCancel");
+            cancelButton.onClick = ()->{
+                cancelInput = false;
+                newStageDialog.hide();
+            }
+        }
+        bind(saveStageAsButton, MouseEvent.CLICK, saveStageAsCallback);
+        newKeybind(["CONTROL", "SHIFT", "S"], saveStageAsCallback);
 
         var newStageButton = menuBar.findComponent("newStage");
         var newStageCallback = ()->{
@@ -401,6 +462,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         var saveStageComponent = menuBar.findComponent("saveStage");
         var saveStageCallback = ()->{
+            if (FlxG.keys.pressed.SHIFT) return;
             /* trace(stringed);
             trace(currentStage.id); */
             if (currentStage.id == "mainStage") {
@@ -599,11 +661,21 @@ class StageEditorTheSecond extends MusicBeatState {
                     selectedProp.scrollFactor.y = yScrollPosStepper.pos;
                 }
 
-                var scaleStepper = editPropWindow.findComponent("editPropWindowScaleStepper");
-                scaleStepper.pos = selectedProp.scale.x;
-                scaleStepper.onChange = ()->{
-                    propData.scale = Either.Right([scaleStepper.pos, scaleStepper.pos]);
-                    selectedProp.scale.set(scaleStepper.pos, scaleStepper.pos);
+                var scaleStepperX = editPropWindow.findComponent("editPropWindowScaleStepperX");
+                scaleStepperX.pos = selectedProp.scale.x;
+
+                var scaleStepperY = editPropWindow.findComponent("editPropWindowScaleStepperY");
+                scaleStepperY.pos = selectedProp.scale.y;
+                
+                scaleStepperX.onChange = ()->{
+                    propData.scale = Either.Right([scaleStepperX.pos, scaleStepperY.pos]);
+                    selectedProp.scale.set(scaleStepperX.pos, scaleStepperY.pos);
+                    selectedProp.updateHitbox();
+                }
+
+                scaleStepperY.onChange = ()->{
+                    propData.scale = Either.Right([scaleStepperX.pos, scaleStepperY.pos]);
+                    selectedProp.scale.set(scaleStepperX.pos, scaleStepperY.pos);
                     selectedProp.updateHitbox();
                 }
 
@@ -899,6 +971,7 @@ class StageEditorTheSecond extends MusicBeatState {
         characterListView = stageDataWindow.findComponent("charactersListView");
 
         deselectStage = function(?target:Float) {
+            target ??= 1;
             propListView.selectedItems = [];
             propListView.selectedItem = null;
             selectedProp = null;
@@ -990,8 +1063,15 @@ class StageEditorTheSecond extends MusicBeatState {
             selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
 
             currentStage.forEachAlive((i)->{
-                if (i != currentStage.getNamedProp(propListView.selectedItem.text)) {
-                    i.alpha = getSelectedPropData().alpha * 0.5;
+                if (i.name == opponent.name || i.name == player.name || i.name == spectator.name) {
+                    i.alpha = switch (i.name) {
+                        case player.name:
+                            currentStage._data.characters.bf?.alpha ?? 1;
+                        case opponent.name:
+                            currentStage._data.characters.dad?.alpha ?? 1;
+                        case spectator.name:
+                            currentStage._data.characters.gf?.alpha ?? 1;
+                    }
                 } else {
                     i.alpha = getSelectedPropData().alpha;
                 }
@@ -1003,8 +1083,10 @@ class StageEditorTheSecond extends MusicBeatState {
                 doubleClickTween.cancel(); */
         }
 
-        newKeybind(["ESCAPE"], deselectStage);
-        newKeybind(["ESCAPE"], deselectChars);
+        newKeybind(["ESCAPE"],  ()->{
+            deselectStage();
+            deselectChars();
+        });
 
         stageList.onChange = ()->{
             if (stageList.selectedItem.id == null) return;
@@ -1057,13 +1139,13 @@ class StageEditorTheSecond extends MusicBeatState {
 
         initNotification();
 
-        newKeybind(["W"], () -> !cancelInput ? camGame.scroll.y -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
-        newKeybind(["A"], () -> !cancelInput ? camGame.scroll.x -= FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
-        newKeybind(["S"], () -> !cancelInput ? camGame.scroll.y += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
-        newKeybind(["D"], () -> !cancelInput ? camGame.scroll.x += FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0 : 0, "pressed");
+        newKeybind(["W"], (elapsed) -> !cancelInput ? camGame.scroll.y -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["A"], (elapsed) -> !cancelInput ? camGame.scroll.x -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["S"], (elapsed) -> !cancelInput ? camGame.scroll.y += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["D"], (elapsed) -> !cancelInput ? camGame.scroll.x += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
 
-        newKeybind(["Q"], () -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom -= 0.05 : 0, "pressed");
-        newKeybind(["E"], () -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom += 0.05 : 0, "pressed");
+        newKeybind(["Q"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom -= (0.015 * elapsed) * 100 : 0, "pressed");
+        newKeybind(["E"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom += (0.015 * elapsed) * 100 : 0, "pressed");
 
         newKeybind(["CONTROL", "E"], ()->camHUD.visible = !camHUD.visible);
 
@@ -1230,7 +1312,6 @@ class StageEditorTheSecond extends MusicBeatState {
                 } else {
                     name = file;
                 }
-
                 musicMenu.dataSource.add({text: name, id: file});
                 musicMenu.onChange = ()->{
                     FunkinSound.playMusic(musicMenu.selectedItem.id, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
@@ -1259,6 +1340,90 @@ class StageEditorTheSecond extends MusicBeatState {
                 y: player.cameraFocusPoint.y - (camGame.height/2) + (player.characterOrigin.y/2)
             }, 0.25, { ease: FlxEase.quartOut });
         } */
+
+        lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        lL.cameras = [camInteract];
+        add(lL);
+
+        tL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        tL.cameras = [camInteract];
+        add(tL);
+
+        bL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        bL.cameras = [camInteract];
+        add(bL);
+
+        rL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        rL.cameras = [camInteract];
+        add(rL);
+
+        tLC = getCornerCircle(true);
+        tLC.cameras = [camInteract];
+        add(tLC);
+        
+        tLCi = getCornerCircle(false);
+        tLCi.cameras = [camInteract];
+        add(tLCi);
+        
+        tMC = getCornerCircle(true);
+        tMC.cameras = [camInteract];
+        add(tMC);
+        
+        tMCi = getCornerCircle(false);
+        tMCi.cameras = [camInteract];
+        add(tMCi);
+
+        mLC = getCornerCircle(true);
+        mLC.cameras = [camInteract];
+        add(mLC);
+        
+        mLCi = getCornerCircle(false);
+        mLCi.cameras = [camInteract];
+        add(mLCi);
+
+        tRC = getCornerCircle(true);
+        tRC.cameras = [camInteract];
+        add(tRC);
+        
+        tRCi = getCornerCircle(false);
+        tRCi.cameras = [camInteract];
+        add(tRCi);
+
+        mRC = getCornerCircle(true);
+        mRC.cameras = [camInteract];
+        add(mRC);
+        
+        mRCi = getCornerCircle(false);
+        mRCi.cameras = [camInteract];
+        add(mRCi);
+
+        bLC = getCornerCircle(true);
+        bLC.cameras = [camInteract];
+        add(bLC);
+        
+        bLCi = getCornerCircle(false);
+        bLCi.cameras = [camInteract];
+        add(bLCi);
+
+        bRC = getCornerCircle(true);
+        bRC.cameras = [camInteract];
+        add(bRC);
+        
+        bRCi = getCornerCircle(false);
+        bRCi.cameras = [camInteract];
+        add(bRCi);
+
+        bMC = getCornerCircle(true);
+        bMC.cameras = [camInteract];
+        add(bMC);
+        
+        bMCi = getCornerCircle(false);
+        bMCi.cameras = [camInteract];
+        add(bMCi);
+
+        cC = getCornerCircle(true);
+        cC.cameras = [camInteract];
+        add(cC);
     }
 
     function reloadStage() {
@@ -1274,8 +1439,13 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var targetSpriteY = 0;
 
-    function update() {
-        super.update();        
+    var mouseLock = {
+        x: 0,
+        y: 0
+    }
+
+    function update(elapsed) {
+        super.update(elapsed);        
         get_conductorInUse().update();
 
         for (i in 0...propListView.dataSource.size) {
@@ -1296,17 +1466,30 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         for (i in members) {
-            i.shader = i == selectedProp || i == selectedChar ? outlineShader : null;
+            //i.shader = i == selectedProp || i == selectedChar ? outlineShader : null;
         }
+
+        /* if (selectedProp != null) {
+            var point = new FlxPoint(FlxG.mouse.x, FlxG.mouse.y);
+            point.x += camGame.scroll.x;
+            point.y += camGame.scroll.y; 
+            selectedProp.angle = FlxAngle.angleBetweenPoint(selectedProp, point, true);
+            trace(selectedProp.angle);
+        } */
 
         /* propListView.disabled = cancelInput;
         characterListView.disabled = cancelInput;
         stageList.disabled = cancelInput; */
         stageDataWindow.disabled = cancelInput;
 
-        if (!cancelInput && selectedProp == null && selectedChar == null && FlxG.mouse.pressed) {
-            camGame.scroll.x -= FlxG.mouse.deltaX/camGame.zoom;
-            camGame.scroll.y -= FlxG.mouse.deltaY/camGame.zoom;
+        if (!cancelInput && selectedProp == null && selectedChar == null) {
+            if (FlxG.mouse.pressed) {
+                camGame.scroll.x -= FlxG.mouse.deltaX/camGame.zoom;
+                camGame.scroll.y -= FlxG.mouse.deltaY/camGame.zoom;
+            }
+            if (FlxG.mouse.wheel != 0) {
+                camGame.zoom += FlxG.mouse.wheel/10;
+            }
         }
 
         if (menuBar != null)
@@ -1370,7 +1553,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 index++;
             }
             if (pressed) {
-                keybind.action();
+                keybind.action(elapsed);
             }
         }
 
@@ -1378,7 +1561,9 @@ class StageEditorTheSecond extends MusicBeatState {
             camGame.zoom = 0.01;
         }
 
-        yLine.scale.x = 1.5 * (1/camGame.zoom);
+        updateTransformTool();
+
+        yLine.scale.x = 2 / camGame.zoom;
         yLine.scale.y = FlxG.height * (1/camGame.zoom);
         yLine.screenCenter();
         yLine.updateHitbox();
@@ -1386,7 +1571,7 @@ class StageEditorTheSecond extends MusicBeatState {
         yLine.scrollFactor.y = 0;
         yLine.visible = camHUD.visible;
 
-        xLine.scale.y = 1.5 * (1/camGame.zoom);
+        xLine.scale.y = 2 / camGame.zoom;
         xLine.scale.x = FlxG.width * (1/camGame.zoom);
         xLine.screenCenter();
         xLine.updateHitbox();
@@ -1394,15 +1579,22 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.scrollFactor.x = 0;
         xLine.visible = camHUD.visible;
 
-        if (selectedProp != null && FlxG.mouse.pressed && !cancelInput) {
-            selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-            selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+        
+        if (selectedProp != null /* && FlxG.mouse.pressed */ && !cancelInput) {
             for (i in currentStage._data.props) {
                 if (i.name == selectedProp.name) {
                     i.position[0] = Math.round(selectedProp.x);
                     i.position[1] = Math.round(selectedProp.y);
                 }
             }
+            /* selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+            selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    i.position[0] = Math.round(selectedProp.x);
+                    i.position[1] = Math.round(selectedProp.y);
+                }
+            } */
         }
 
         if (selectedChar != null && FlxG.mouse.pressed && !cancelInput) {
@@ -1422,6 +1614,384 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
+    }
+
+    function updateTransformTool() {
+        if (camInteract != null) {
+            camInteract.scroll.x = camGame.scroll.x;
+            camInteract.scroll.y = camGame.scroll.y;
+            camInteract.zoom = camGame.zoom;
+            camInteract.visible = selectedProp != null;
+        }
+        
+        var selectedObj = selectedProp != null ? selectedProp : (selectedChar != null ? selectedChar : null);
+
+        if (selectedProp != null && tLC != null) {
+            tLC.scale.set(1/camGame.zoom, 1/camGame.zoom);
+            tLC.updateHitbox();
+            tLC.scrollFactor.x = selectedProp.scrollFactor.x;
+            tLC.scrollFactor.y = selectedProp.scrollFactor.y;
+            tLC.x += FlxG.mouse.deltaX / camGame.zoom;
+            tLC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.x -= (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y -= (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
+                if (selectedProp.scale.x < 0.1) {
+                    selectedProp.scale.x = 0.1;
+                }
+                if (selectedProp.scale.y < 0.1) {
+                    selectedProp.scale.y = 0.1;
+                }
+            }
+            tLC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (tLC.width/2);
+            tLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (tLC.height/2);
+
+            tLC.alpha = FlxG.mouse.overlaps(tLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (tLC != null) {
+            tLC.alpha = selectedProp != null ? tLC.alpha : 0.01;
+            
+            tLCi.alpha = tLC.alpha;
+            tLCi.scrollFactor = tLC.scrollFactor;
+            tLCi.scale = tLC.scale;
+            tLCi.x = tLC.x + (tLC.width/2) - (tLCi.width/2);
+            tLCi.y = tLC.y + (tLC.height/2) - (tLCi.height/2);
+        }
+
+        if (selectedProp != null && tLC != null) {
+            tMC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
+            tMC.updateHitbox();
+            tMC.scrollFactor.x = selectedProp.scrollFactor.x;
+            tMC.scrollFactor.y = selectedProp.scrollFactor.y;
+            tMC.x += FlxG.mouse.deltaX / camGame.zoom;
+            tMC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.justPressed) {
+                mouseLock.x = FlxG.mouse.x;
+            }
+            if (FlxG.mouse.overlaps(tMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.y -= (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
+                FlxG.mouse.x = mouseLock.x;
+                if (selectedProp.scale.y < 0.1) {
+                    selectedProp.scale.y = 0.1;
+                }
+            }
+            tMC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (tLC.width/2) + (selectedProp.width/2);
+            tMC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (tLC.height/2);
+
+            tMC.alpha = FlxG.mouse.overlaps(tMC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (tMC != null) {
+            tMC.alpha = selectedProp != null ? tMC.alpha : 0.01;
+            
+            tMCi.alpha = tMC.alpha;
+            tMCi.scrollFactor = tMC.scrollFactor;
+            tMCi.scale = tMC.scale;
+            tMCi.x = tMC.x + (tMC.width/2) - (tMCi.width/2);
+            tMCi.y = tMC.y + (tMC.height/2) - (tMCi.height/2);
+        }
+
+        if (selectedProp != null && tLC != null) {
+            mLC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
+            mLC.updateHitbox();
+            mLC.scrollFactor.x = selectedProp.scrollFactor.x;
+            mLC.scrollFactor.y = selectedProp.scrollFactor.y;
+            mLC.x += FlxG.mouse.deltaX / camGame.zoom;
+            mLC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.justPressed) {
+                mouseLock.y = FlxG.mouse.y;
+            }
+            if (FlxG.mouse.overlaps(mLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.x -= (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
+                FlxG.mouse.y = mouseLock.y;
+                if (selectedProp.scale.x < 0.1) {
+                    selectedProp.scale.x = 0.1;
+                }
+            }
+            mLC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (mLC.width/2);
+            mLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2);
+
+            mLC.alpha = FlxG.mouse.overlaps(mLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (mLC != null) {
+            mLC.alpha = selectedProp != null ? mLC.alpha : 0.01;
+            
+            mLCi.alpha = mLC.alpha;
+            mLCi.scrollFactor = mLC.scrollFactor;
+            mLCi.scale = mLC.scale;
+            mLCi.x = mLC.x + (mLC.width/2) - (mLCi.width/2);
+            mLCi.y = mLC.y + (mLC.height/2) - (mLCi.height/2);
+        }
+
+        if (selectedProp != null && tRC != null) {
+            tRC.scale.set(1/camGame.zoom, 1/camGame.zoom);
+            tRC.updateHitbox();
+            tRC.scrollFactor.x = selectedProp.scrollFactor.x;
+            tRC.scrollFactor.y = selectedProp.scrollFactor.y;
+            tRC.x += FlxG.mouse.deltaX / camGame.zoom;
+            tRC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.overlaps(tRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                // selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.x += (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y -= (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
+                if (selectedProp.scale.x < 0.1) {
+                    selectedProp.scale.x = 0.1;
+                }
+                if (selectedProp.scale.y < 0.1) {
+                    selectedProp.scale.y = 0.1;
+                }
+            }
+            tRC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (tRC.width/2) + selectedProp.width;
+            tRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (tRC.height/2);
+
+            tRC.alpha = FlxG.mouse.overlaps(tRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (tLC != null) {
+            tRC.alpha = selectedProp != null ? tRC.alpha : 0.01;
+            
+            tRCi.alpha = tRC.alpha;
+            tRCi.scrollFactor = tRC.scrollFactor;
+            tRCi.scale = tRC.scale;
+            tRCi.x = tRC.x + (tRC.width/2) - (tRCi.width/2);
+            tRCi.y = tRC.y + (tRC.height/2) - (tRCi.height/2);
+        }
+
+        if (selectedProp != null && mRC != null) {
+            mRC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
+            mRC.updateHitbox();
+            mRC.scrollFactor.x = selectedProp.scrollFactor.x;
+            mRC.scrollFactor.y = selectedProp.scrollFactor.y;
+            mRC.x += FlxG.mouse.deltaX / camGame.zoom;
+            mRC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.justPressed) {
+                mouseLock.y = FlxG.mouse.y;
+            }
+            if (FlxG.mouse.overlaps(mRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                //selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.x += (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
+                FlxG.mouse.y = mouseLock.y;
+                if (selectedProp.scale.x < 0.1) {
+                    selectedProp.scale.x = 0.1;
+                }
+            }
+            mRC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (mRC.width/2) + (selectedProp.width);
+            mRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2);
+
+            mRC.alpha = FlxG.mouse.overlaps(mRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (mRC != null) {
+            mRC.alpha = selectedProp != null ? mRC.alpha : 0.01;
+            
+            mRCi.alpha = mRC.alpha;
+            mRCi.scrollFactor = mRC.scrollFactor;
+            mRCi.scale = mRC.scale;
+            mRCi.x = mRC.x + (mRC.width/2) - (mRCi.width/2);
+            mRCi.y = mRC.y + (mRC.height/2) - (mRCi.height/2);
+        }
+
+        if (selectedProp != null && bLC != null) {
+            bLC.scale.set(1/camGame.zoom, 1/camGame.zoom);
+            bLC.updateHitbox();
+            bLC.scrollFactor.x = selectedProp.scrollFactor.x;
+            bLC.scrollFactor.y = selectedProp.scrollFactor.y;
+            bLC.x += FlxG.mouse.deltaX / camGame.zoom;
+            bLC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.overlaps(bLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                //selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.x -= (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y += (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
+                if (selectedProp.scale.x < 0.1) {
+                    selectedProp.scale.x = 0.1;
+                }
+                if (selectedProp.scale.y < 0.1) {
+                    selectedProp.scale.y = 0.1;
+                }
+            }
+            bLC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (bLC.width/2);
+            bLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bLC.height/2) + selectedProp.height;
+
+            bLC.alpha = FlxG.mouse.overlaps(bLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (bLC != null) {
+            bLC.alpha = selectedProp != null ? bLC.alpha : 0.01;
+            
+            bLCi.alpha = bLC.alpha;
+            bLCi.scrollFactor = bLC.scrollFactor;
+            bLCi.scale = bLC.scale;
+            bLCi.x = bLC.x + (bLC.width/2) - (bLCi.width/2);
+            bLCi.y = bLC.y + (bLC.height/2) - (bLCi.height/2);
+        }
+
+        if (selectedProp != null && bMC != null) {
+            bMC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
+            bMC.updateHitbox();
+            bMC.scrollFactor.x = selectedProp.scrollFactor.x;
+            bMC.scrollFactor.y = selectedProp.scrollFactor.y;
+            bMC.x += FlxG.mouse.deltaX / camGame.zoom;
+            bMC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.justPressed) {
+                mouseLock.x = FlxG.mouse.x;
+            }
+            if (FlxG.mouse.overlaps(bMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                // selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.y += (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
+                FlxG.mouse.x = mouseLock.x;
+                if (selectedProp.scale.y < 0.1) {
+                    selectedProp.scale.y = 0.1;
+                }
+            }
+            bMC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (bMC.width/2) + (selectedProp.width/2);
+            bMC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bMC.height/2) + (selectedProp.height);
+
+            bMC.alpha = FlxG.mouse.overlaps(bMC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (bMC != null) {
+            bMC.alpha = selectedProp != null ? bMC.alpha : 0.01;
+            
+            bMCi.alpha = bMC.alpha;
+            bMCi.scrollFactor = bMC.scrollFactor;
+            bMCi.scale = bMC.scale;
+            bMCi.x = bMC.x + (bMC.width/2) - (bMCi.width/2);
+            bMCi.y = bMC.y + (bMC.height/2) - (bMCi.height/2);
+        }
+
+        if (selectedProp != null && bRC != null) {
+            bRC.scale.set(1/camGame.zoom, 1/camGame.zoom);
+            bRC.updateHitbox();
+            bRC.scrollFactor.x = selectedProp.scrollFactor.x;
+            bRC.scrollFactor.y = selectedProp.scrollFactor.y;
+            bRC.x += FlxG.mouse.deltaX / camGame.zoom;
+            bRC.y += FlxG.mouse.deltaY / camGame.zoom;
+            if (FlxG.mouse.overlaps(bRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                // selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                //selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                selectedProp.updateHitbox();
+                selectedProp.scale.x += (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y += (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
+                if (selectedProp.scale.x < 0.1) {
+                    selectedProp.scale.x = 0.1;
+                }
+                if (selectedProp.scale.y < 0.1) {
+                    selectedProp.scale.y = 0.1;
+                }
+            }
+            bRC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (bRC.width/2) + selectedProp.width;
+            bRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bRC.height/2) + selectedProp.height;
+
+            bRC.alpha = FlxG.mouse.overlaps(bRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        }
+
+        if (bRC != null) {
+            bRC.alpha = selectedProp != null ? bRC.alpha : 0.01;
+            
+            bRCi.alpha = bRC.alpha;
+            bRCi.scrollFactor = bRC.scrollFactor;
+            bRCi.scale = bRC.scale;
+            bRCi.x = bRC.x + (bRC.width/2) - (bRCi.width/2);
+            bRCi.y = bRC.y + (bRC.height/2) - (bRCi.height/2);
+        }
+
+        if (tL != null) {
+            if (selectedProp != null) {
+                tL.visible = true;
+                tL.scrollFactor = selectedProp.scrollFactor;
+                tL.x = selectedProp.x + (selectedProp.width/2);
+                tL.y = selectedProp.y;
+                tL.scale.x = selectedProp.width;
+                tL.scale.y = 2 / camGame.zoom;               
+            } else {
+                tL.visible = false;
+            }
+        }
+
+        if (lL != null) {
+            if (selectedProp != null) {
+                lL.visible = true;
+                lL.scrollFactor = selectedProp.scrollFactor;
+                lL.x = selectedProp.x;
+                lL.y = selectedProp.y + (selectedProp.height/2);
+                lL.scale.x = 2 / camGame.zoom;
+                lL.scale.y = selectedProp.height;
+            } else {
+                lL.visible = false;
+            }
+        }
+
+        if (rL != null) {
+            if (selectedProp != null) {
+                rL.visible = true;
+                rL.scale.x = 2 / camGame.zoom;
+                rL.scale.y = selectedProp.height;
+                rL.updateHitbox();
+                rL.scrollFactor = selectedProp.scrollFactor;
+                rL.x = selectedProp.x + selectedProp.width;
+                rL.y = selectedProp.y;
+            } else {
+                rL.visible = false;
+            }
+        }
+
+        if (bL != null) {
+            if (selectedProp != null) {
+                bL.visible = true;
+                bL.scale.x = selectedProp.width;
+                bL.scale.y = 2 / camGame.zoom;
+                bL.updateHitbox();
+                bL.scrollFactor = selectedProp.scrollFactor;
+                bL.x = selectedProp.x;
+                bL.y = selectedProp.y + selectedProp.height;
+            } else {
+                bL.visible = false;
+            }
+        }
+
+        if (cC != null) {
+            
+            if (selectedProp != null) {
+                cC.scale.set(0.8/camGame.zoom, 0.8/camGame.zoom);
+                cC.updateHitbox();
+                cC.scrollFactor.x = selectedProp.scrollFactor.x;
+                cC.scrollFactor.y = selectedProp.scrollFactor.y;
+                cC.x += FlxG.mouse.deltaX / camGame.zoom;
+                cC.y += FlxG.mouse.deltaY / camGame.zoom;
+
+                if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed) {
+                    selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
+                    selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                }
+
+                cC.x = selectedProp.x + (selectedProp.width/2) - (cC.width/2);
+                cC.y = selectedProp.y + (selectedProp.height/2) - (cC.height/2);
+
+                
+                cC.alpha = FlxG.mouse.overlaps(cC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            } else {
+                cC.alpha = 0.01;
+            }
+        }
+
+
+        if (selectedProp == null) return;
+        getPropData(selectedProp.name).scale = Either.Right([Math.round(selectedProp.scale.x*100)/100, Math.round(selectedProp.scale.y*100)/100]);
     }
 
     function refreshPropList() {
@@ -1699,5 +2269,21 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         return fileExists;
+    }
+
+    function getCornerCircle(outer:Bool) {
+        var theCircle = new FlxShapeCircle(0, 0, outer ? 15 : 10, {
+            thickness: 3,
+            color: outer ? 0xFFbbe3e9 : FlxColor.TRANSPARENT,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, outer ? FlxColor.TRANSPARENT : 0xFFf7a7a7);
+        theCircle.antialiasing = true;
+        //add(outerRing);
+        //theCircle.add(outerRing);
+        return theCircle;
     }
 }

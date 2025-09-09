@@ -80,6 +80,20 @@
 
         <box text="Change Log">
             <vbox>
+                <frame text="v2.0.2" width="449">
+                    <vbox>
+                        <label text="—— Fixes ——" />
+                        <spacer />
+                        <label text="• Fixed Camera Movement Being Framerate Dependant." />
+                        <spacer />
+                        <spacer />
+                        <label text="—— Additions ——" />
+                        <spacer />
+                        <label text="• Added Prop Transform Tool." />
+                        <label text="• Added FAQ Tab in User Guide." />
+                        <spacer />
+                    </vbox>
+                </frame>
                 <frame text="v2.0.1" width="449">
                     <vbox>
                         <label text="—— Fixes ——" />

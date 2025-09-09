@@ -53,7 +53,10 @@
         </hbox>
 
         <label text="Scale:" style="padding: 2px;" verticalAlign="center"/>
-        <number-stepper id="editPropWindowScaleStepper" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+        <hbox width="100%">
+            <number-stepper id="editPropWindowScaleStepperX" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+            <number-stepper id="editPropWindowScaleStepperY" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+        </hbox>
         
         <label text="Alpha:" style="padding: 2px;" verticalAlign="center"/>
         <number-stepper id="editPropWindowAlphaStepper" min="0" max="1" pos="0" step="0.1" width="100%" verticalAlign="center"/>
