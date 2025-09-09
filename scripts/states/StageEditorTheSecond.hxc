@@ -189,8 +189,8 @@ class StageEditorTheSecond extends MusicBeatState {
     var currentStage:Stage;
 
     var selectedProp;
-    var selectedChar;
-    var selectedCharType = "none";
+    var selectedCharacter;
+    var selectedCharacterType = "none";
 
     var yLine;
     var xLine;
@@ -1104,8 +1104,8 @@ class StageEditorTheSecond extends MusicBeatState {
 
         deselectChars = ()->{
             characterListView.selectedItems = [];
-            selectedChar = null;
-            selectedCharType = "none";
+            selectedCharacter = null;
+            selectedCharacterType = "none";
             /* selectedProp = null;
             for (i in currentStage.members) {
                 i.alpha = 1;
@@ -1118,8 +1118,8 @@ class StageEditorTheSecond extends MusicBeatState {
                 case "Player":
                     if (player != null) {
                         player.alpha = (player._data.alpha ?? 1);
-                        selectedChar = player;
-                        selectedCharType = "bf";
+                        selectedCharacter = player;
+                        selectedCharacterType = "bf";
                     } else {
                         deselectChars();
                         deselectStage();
@@ -1127,8 +1127,8 @@ class StageEditorTheSecond extends MusicBeatState {
                 case "Opponent":
                     if (opponent != null) {
                         opponent.alpha = (opponent._data.alpha ?? 1);
-                        selectedChar = opponent;
-                        selectedCharType = "dad";
+                        selectedCharacter = opponent;
+                        selectedCharacterType = "dad";
                     } else {
                         deselectChars();
                         deselectStage();
@@ -1136,8 +1136,8 @@ class StageEditorTheSecond extends MusicBeatState {
                 case "Spectator":
                     if (spectator != null) {
                         spectator.alpha = (spectator._data.alpha ?? 1);
-                        selectedChar = spectator;
-                        selectedCharType = "gf";
+                        selectedCharacter = spectator;
+                        selectedCharacterType = "gf";
                     } else {
                         deselectChars();
                         deselectStage();
@@ -1272,13 +1272,13 @@ class StageEditorTheSecond extends MusicBeatState {
 
         var editCharacterButton = stageDataWindow.findComponent("editCharacterButton");
         editCharacterButton.onClick = ()->{
-            if (selectedChar == null) {
+            if (selectedCharacter == null) {
                 newNotification("Error!", "Please Select a Character First.", NotificationType.Error);
                 return;
             }
             editCharacterWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editCharacterWindow"));
             editCharacterWindow.windowManager = windowManager;
-            editCharacterWindow.title = "Editing " + switch (selectedCharType) {
+            editCharacterWindow.title = "Editing " + switch (selectedCharacterType) {
                 case "bf":
                     "Player";
                 case "gf":
@@ -1302,7 +1302,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
 
             var getCharData = ()->{
-                switch (selectedCharType) {
+                switch (selectedCharacterType) {
                     case "bf":
                         return currentStage._data.characters.bf;
                     case "gf":
@@ -1369,7 +1369,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
 
             visibleCheck = editCharacterWindow.findComponent("editCharacterWindowVisibleCheckbox");
-            visibleCheck.selected = switch (selectedCharType) {
+            visibleCheck.selected = switch (selectedCharacterType) {
                 case "bf":
                     player.visible;
                 case "gf":
@@ -1378,7 +1378,7 @@ class StageEditorTheSecond extends MusicBeatState {
                     opponent.visible;
             }
             visibleCheck.onChange = ()->{
-                switch (selectedCharType) {
+                switch (selectedCharacterType) {
                     case "bf":
                         player.visible = visibleCheck.selected;
                     case "gf":
@@ -1601,7 +1601,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         for (i in members) {
-            //i.shader = i == selectedProp || i == selectedChar ? outlineShader : null;
+            //i.shader = i == selectedProp || i == selectedCharacter ? outlineShader : null;
         }
 
         /* if (selectedProp != null) {
@@ -1617,7 +1617,7 @@ class StageEditorTheSecond extends MusicBeatState {
         stageList.disabled = cancelInput; */
         stageDataWindow.disabled = cancelInput;
 
-        if (!cancelInput && selectedProp == null && selectedChar == null) {
+        if (!cancelInput && selectedProp == null && selectedCharacter == null) {
             if (FlxG.mouse.pressed) {
                 camGame.scroll.x -= FlxG.mouse.deltaX/camGame.zoom;
                 camGame.scroll.y -= FlxG.mouse.deltaY/camGame.zoom;
@@ -1732,20 +1732,20 @@ class StageEditorTheSecond extends MusicBeatState {
             } */
         }
 
-        if (selectedChar != null && FlxG.mouse.pressed && !cancelInput) {
-            selectedChar.x += FlxG.mouse.deltaX / camGame.zoom;
-            selectedChar.y += FlxG.mouse.deltaY / camGame.zoom;
+        if (selectedCharacter != null && FlxG.mouse.pressed && !cancelInput) {
+            selectedCharacter.x += FlxG.mouse.deltaX / camGame.zoom;
+            selectedCharacter.y += FlxG.mouse.deltaY / camGame.zoom;
             
-            switch (selectedCharType) {
+            switch (selectedCharacterType) {
                 case "bf":
-                    currentStage._data.characters.bf.position[0] = Math.round(selectedChar.x) + selectedChar.characterOrigin.x;
-                    currentStage._data.characters.bf.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
+                    currentStage._data.characters.bf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                    currentStage._data.characters.bf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
                 case "gf":
-                    currentStage._data.characters.gf.position[0] = Math.round(selectedChar.x) + selectedChar.characterOrigin.x;
-                    currentStage._data.characters.gf.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
+                    currentStage._data.characters.gf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                    currentStage._data.characters.gf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
                 case "dad":
-                    currentStage._data.characters.dad.position[0] = Math.round(selectedChar.x) + selectedChar.characterOrigin.x;
-                    currentStage._data.characters.dad.position[1] = Math.round(selectedChar.y) + selectedChar.characterOrigin.y;
+                    currentStage._data.characters.dad.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                    currentStage._data.characters.dad.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
             }
         }
 
@@ -1759,7 +1759,7 @@ class StageEditorTheSecond extends MusicBeatState {
             camInteract.visible = selectedProp != null;
         }
         
-        var selectedObj = selectedProp != null ? selectedProp : (selectedChar != null ? selectedChar : null);
+        var selectedObj = selectedProp != null ? selectedProp : (selectedCharacter != null ? selectedCharacter : null);
 
         if (selectedProp != null && tLC != null) {
             tLC.scale.set(1/camGame.zoom, 1/camGame.zoom);
