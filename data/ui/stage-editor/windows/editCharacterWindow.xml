@@ -6,10 +6,17 @@
             <number-stepper id="editCharacterWindowPosStepperY" pos="0" step="1" width="100%" verticalAlign="center"/>
         </hbox>
 
+
         <label text="Scroll:" style="padding: 2px;" verticalAlign="center"/>
         <hbox width="100%">
             <number-stepper id="editCharacterWindowScrollStepperX" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
             <number-stepper id="editCharacterWindowScrollStepperY" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+        </hbox>
+
+        <label text="Camera Offsets:" style="padding: 2px;" verticalAlign="center"/>
+        <hbox width="100%">
+            <number-stepper id="charCamOffsetX" pos="0" step="1" width="100%" verticalAlign="center"/>
+            <number-stepper id="charCamOffsetY" pos="0" step="1" width="100%" verticalAlign="center"/>
         </hbox>
 
         <label text="Scale:" style="padding: 2px;" verticalAlign="center"/>
