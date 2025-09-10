@@ -1317,7 +1317,7 @@ class StageEditorTheSecond extends MusicBeatState {
                     
                     for (i in CharacterDataParser.characterCache.keys()) {
                         if (CharacterDataParser.characterCache.get(i).name == char.name) {
-                            CharacterEditorV3.startingChar = { text: char.name, id: i };
+                            CharacterEditorV3.startingChar = { text: char.name, id: i, protected: false };
                         }
                     }
 
