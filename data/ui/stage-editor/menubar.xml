@@ -35,12 +35,9 @@
     <menu text="View" width="300">
         <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
         <menu-separator />
-        <menu-item id="viewFromPlayer" text="View Stage From Player" shortcutText="(Coming Soon)"
-            disabled="true" />
-        <menu-item id="viewFromOpponent" text="View Stage From Opponent"
-            shortcutText="(Coming Soon)" disabled="true" />
-        <menu-item id="viewFromSpectator" text="View Stage From Spectator"
-            shortcutText="(Coming Soon)" disabled="true" />
+        <menu-item id="viewFromPlayer" text="View Stage From Player" disabled="false" />
+        <menu-item id="viewFromOpponent" text="View Stage From Opponent" disabled="false" />
+        <menu-item id="viewFromSpectator" text="View Stage From Spectator" disabled="false" />
     </menu>
 
     <menu text="Audio" width="300">
