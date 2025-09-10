@@ -1362,6 +1362,20 @@ class StageEditorTheSecond extends MusicBeatState {
                 resetChars();
             }
 
+            xCamPosStepper = editCharacterWindow.findComponent("charCamOffsetX");
+            xCamPosStepper.pos = getCharData().cameraOffsets[0];
+            xCamPosStepper.onChange = ()->{
+                getCharData().cameraOffsets[0] = xCamPosStepper.pos;
+                resetChars();
+            }
+
+            yCamPosStepper = editCharacterWindow.findComponent("charCamOffsetY");
+            yCamPosStepper.pos = getCharData().cameraOffsets[1];
+            yCamPosStepper.onChange = ()->{
+                getCharData().cameraOffsets[1] = yCamPosStepper.pos;
+                resetChars();
+            }
+
             xScrollPosStepper = editCharacterWindow.findComponent("editCharacterWindowScrollStepperX");
             xScrollPosStepper.pos = getCharData().scroll[0];
             xScrollPosStepper.onChange = ()->{
