@@ -161,7 +161,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var stageIdList = [];
 
-    var editorVersion = "2.0.4";
+    var editorVersion = "???"; // Uses polymod meta now :D
     var editorTitle = "Nova Stage Editor";
     var editorFolder = "??";
 
@@ -365,9 +365,11 @@ class StageEditorTheSecond extends MusicBeatState {
         camHUD.bgColor = 0x00000000;
         FlxG.cameras.add(camHUD, true);
 
+        trace("\n\n\n\n\n\n");
         for (i in PolymodHandler.getAllMods()) {
             if (i.title == editorTitle) {
                 editorFolder = i.id;
+                editorVersion = i.modVersion.version.join(".");
             } 
             if (i.title == "Nova Character Editor REFRESHED") {
                 hasCharacterEditorInstalled = true;

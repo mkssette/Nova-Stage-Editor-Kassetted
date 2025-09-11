@@ -11,7 +11,7 @@
         <menu-item id="newStage" text="New" shortcutText="Ctrl + N"/>
         <menu-separator />
         <menu-item id="saveStage" text="Save" shortcutText="Ctrl + S" />
-        <menu-item id="saveStageAs" text="Save As" shortcutText="Ctrl + Shift + S" disabled="true"/>
+        <menu-item id="saveStageAs" text="Save As" shortcutText="Ctrl + Shift + S" />
         <menu-item id="saveStageForPsych" text="Save For Psych" shortcutText="(Coming Soon)"
             disabled="true" />
         <menu-item id="saveStageForCNE" text="Save For Codename Engine" shortcutText="(Coming Soon)"
