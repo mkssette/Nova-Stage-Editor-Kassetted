@@ -84,6 +84,15 @@
         <box text="Change Log">
             <scroll-view width="449" height="445" contentWidth="100%">
                 <vbox>
+                    <frame text="v2.0.4" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added View From Character in View tab." />
+                            <label text="• Added Show Character Camera Bounds in View tab." />
+                            <spacer />
+                        </vbox>
+                    </frame>
                     <frame text="v2.0.3" width="425">
                         <vbox>
                             <label text="—— Additions ——" />
@@ -184,30 +193,31 @@
         </box>
 
         <box text="FAQ">
-            <vbox>
-                <frame text=" - General Troubleshooting - " width="449">
-                    <vbox>
-                        <label text=" • Make sure your mod has a valid '_polymod_meta.json'." />
-                    </vbox>
-                </frame>
-                <frame text=" - Stage Isn't Showing Up - " width="449">
-                    <vbox>
-                        <label text=" • The stage MUST be placed in the 'stages' folder inside of \n   'data' folder: 'data/stages/yourStage.json'." />
-                    </vbox>
-                </frame>
-                <frame text=" - Asset Path is Invalid - " width="449">
-                    <vbox>
-                        <label text=" • Images must be placed in either the 'images/' folder \n   or the 'shared/images/' folder." />
-                        <spacer />
-                        <label text=" • When typing the Asset Path make sure you are using \n   foward slashes: Use '/' NOT '\'." />
-                        <spacer />
-                        <label text=" • When typing the Asset Path you do NOT need to include \n   'images/' or 'shared/images/' as the editor does that \n   automatically." />
-                        <spacer />
-                    </vbox>
-                </frame>
-            </vbox>
+            <scroll-view width="449" height="445" contentWidth="100%">
+                <vbox>
+                    <frame text=" - General Troubleshooting - " width="435">
+                        <vbox>
+                            <label text=" • Make sure your mod has a valid '_polymod_meta.json'." />
+                        </vbox>
+                    </frame>
+                    <frame text=" - Stage Isn't Showing Up - " width="435">
+                        <vbox>
+                            <label text=" • The stage MUST be placed in the 'stages' folder inside of \n   'data' folder: 'data/stages/yourStage.json'." />
+                        </vbox>
+                    </frame>
+                    <frame text=" - Asset Path is Invalid - " width="435">
+                        <vbox>
+                            <label text=" • Images must be placed in either the 'images/' folder \n   or the 'shared/images/' folder." />
+                            <spacer />
+                            <label text=" • When typing the Asset Path make sure you are using \n   foward slashes: Use '/' NOT '\'." />
+                            <spacer />
+                            <label text=" • When typing the Asset Path you do NOT need to include \n   'images/' or 'shared/images/' as the editor does that \n   automatically." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                </vbox>
+            </scroll-view>
         </box>
-
     </tabview>
     <window-footer width="100%">
         <spacer width="100%" />

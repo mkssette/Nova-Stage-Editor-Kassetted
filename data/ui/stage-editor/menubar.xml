@@ -38,6 +38,10 @@
         <menu-item id="viewFromPlayer" text="View Stage From Player" disabled="false" />
         <menu-item id="viewFromOpponent" text="View Stage From Opponent" disabled="false" />
         <menu-item id="viewFromSpectator" text="View Stage From Spectator" disabled="false" />
+        <menu-separator />
+        <menucheckbox id="viewPlayerBounds" text=" Show Player Camera Bounds" />
+        <menucheckbox id="viewOpponentBounds" text=" Show Opponent Camera Bounds" />
+        <menucheckbox id="viewSpectatorBounds" text=" Show Spectator Camera Bounds" />
     </menu>
 
     <menu text="Audio" width="300">

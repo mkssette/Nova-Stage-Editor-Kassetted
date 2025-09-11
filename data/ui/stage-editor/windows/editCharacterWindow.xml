@@ -37,7 +37,7 @@
         <label text="Visible In Editor:" style="padding: 2px;" verticalAlign="center"/>
         <checkbox id="editCharacterWindowVisibleCheckbox"/>
     </hbox>
-    <box id="editorBox" width="100%">
+    <box id="editorBox" width="100%" hidden="true">
         <button id="editCharaterWindowOpenEditor" text="Edit Character With Character Editor" width="100%"/>
     </box>
     <window-footer width="100%">

@@ -110,6 +110,11 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var outlineShader = ScriptedFlxRuntimeShader.init('WhiteOutlineRuntimeShader');
 
+    // -- box???? -- \\
+    var playerBoundingBox;
+    var opponentBoundingBox;
+    var spectatorBoundingBox;
+    
     // --  Lines  -- \\
     var lL;
     var tL;
@@ -156,7 +161,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var stageIdList = [];
 
-    var editorVersion = "2.0.4-beta";
+    var editorVersion = "2.0.4";
     var editorTitle = "Nova Stage Editor";
     var editorFolder = "??";
 
@@ -1334,6 +1339,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 deselectStage();
                 deselectChars();
                 resetChars();
+                forceUpdateBounds = true;
             });
 
 
@@ -1488,8 +1494,71 @@ class StageEditorTheSecond extends MusicBeatState {
         spectatorDropdown.selectedItem = { text: "Girlfriend" };
 
        /*  menuBar.findComponent("undo").onClick = ()->undoCallback;
-        menuBar.findComponent("redo").onClick = ()->redoCallback; */
+       menuBar.findComponent("redo").onClick = ()->redoCallback; */
+       
+        playerBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
+            thickness: 2,
+            color: FlxColor.BLUE,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, FlxColor.TRANSPARENT);
+        playerBoundingBox.cameras = [camGame];
+        playerBoundingBox.visible = false;
+        add(playerBoundingBox);
 
+        opponentBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
+            thickness: 2,
+            color: FlxColor.PURPLE,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, FlxColor.TRANSPARENT);
+        opponentBoundingBox.cameras = [camGame];
+        opponentBoundingBox.visible = false;
+        add(opponentBoundingBox);
+
+        spectatorBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
+            thickness: 2,
+            color: FlxColor.RED,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, FlxColor.TRANSPARENT);
+        spectatorBoundingBox.cameras = [camGame];
+        spectatorBoundingBox.visible = false;
+        add(spectatorBoundingBox);
+
+        menuBar.findComponent("viewPlayerBounds").selected = false;
+        menuBar.findComponent("viewPlayerBounds").onClick = ()->{
+            playerBoundingBox.visible = menuBar.findComponent("viewPlayerBounds").selected;
+            new FlxTimer().start(0.05, ()->{
+                forceUpdateBounds = true;
+            });
+        };
+
+        menuBar.findComponent("viewOpponentBounds").selected = false;
+        menuBar.findComponent("viewOpponentBounds").onClick = ()->{
+            opponentBoundingBox.visible = menuBar.findComponent("viewOpponentBounds").selected;
+            new FlxTimer().start(0.05, ()->{
+                forceUpdateBounds = true;
+            });
+        };
+
+        menuBar.findComponent("viewSpectatorBounds").selected = false;
+        menuBar.findComponent("viewSpectatorBounds").onClick = ()->{
+            spectatorBoundingBox.visible = menuBar.findComponent("viewSpectatorBounds").selected;
+            new FlxTimer().start(0.05, ()->{
+                forceUpdateBounds = true;
+            });
+        };
+       
         menuBar.findComponent("viewFromPlayer").onClick = ()->{
             FlxTween.tween(camGame.scroll, { 
                 x: player.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.bf.cameraOffsets[0],
@@ -1510,6 +1579,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 y: spectator.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.gf.cameraOffsets[1]
             }, 0.25, { ease: FlxEase.quartOut });
         }
+
 
         lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
         lL.cameras = [camInteract];
@@ -1613,6 +1683,8 @@ class StageEditorTheSecond extends MusicBeatState {
         x: 0,
         y: 0
     }
+
+    var forceUpdateBounds = false;
 
     function update(elapsed) {
         super.update(elapsed);        
@@ -1776,6 +1848,43 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
         xLine.visible = camHUD.visible;
+
+        playerBoundingBox.alpha = opponentBoundingBox.alpha = spectatorBoundingBox.alpha = camHUD.visible ? 1 : 0;
+
+        /* if ((playerBoundingBox.shapeWidth == playerBoundingBox.shapeHeight && playerBoundingBox.shapeWidth == 200) || forceUpdateBounds)    
+            resetChars(); */
+
+        if (playerBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
+            playerBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+            playerBoundingBox.redrawShape();
+            playerBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+            playerBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+            playerBoundingBox.updateHitbox();
+            playerBoundingBox.x = player.cameraFocusPoint.x - (playerBoundingBox.width/2) + currentStage._data.characters.bf.cameraOffsets[0] + 2;
+            playerBoundingBox.y = player.cameraFocusPoint.y - (playerBoundingBox.height/2) + currentStage._data.characters.bf.cameraOffsets[1] + 2;
+        }
+
+        if (opponentBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
+            opponentBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+            opponentBoundingBox.redrawShape();
+            opponentBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+            opponentBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+            opponentBoundingBox.updateHitbox();
+            opponentBoundingBox.x = opponent.cameraFocusPoint.x - (opponentBoundingBox.width/2) + currentStage._data.characters.dad.cameraOffsets[0] + 2;
+            opponentBoundingBox.y = opponent.cameraFocusPoint.y - (opponentBoundingBox.height/2) + currentStage._data.characters.dad.cameraOffsets[1] + 2;
+        }
+
+        if (spectatorBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
+            spectatorBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+            spectatorBoundingBox.redrawShape();
+            spectatorBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+            spectatorBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+            spectatorBoundingBox.updateHitbox();
+            spectatorBoundingBox.x = spectator.cameraFocusPoint.x - (spectatorBoundingBox.width/2) + currentStage._data.characters.gf.cameraOffsets[0] + 2;
+            spectatorBoundingBox.y = spectator.cameraFocusPoint.y - (spectatorBoundingBox.height/2) + currentStage._data.characters.gf.cameraOffsets[1] + 2;
+        }
+
+        forceUpdateBounds = false;
  
         
         if (selectedProp != null /* && FlxG.mouse.pressed */ && !cancelInput) {
