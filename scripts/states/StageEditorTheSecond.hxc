@@ -371,7 +371,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 editorFolder = i.id;
                 editorVersion = i.modVersion.version.join(".");
             } 
-            if (i.title == "Nova Character Editor REFRESHED") {
+            if (i.title == "Nova Character Editor") {
                 hasCharacterEditorInstalled = true;
             }
         }
@@ -416,9 +416,9 @@ class StageEditorTheSecond extends MusicBeatState {
         var saveStageAsButton = menuBar.findComponent("saveStageAs");
         var saveStageAsCallback = ()->{
             var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/saveAsDialog"));
-            add(newStageDialog);
+            // add(newStageDialog);
             newStageDialog.screenCenter();
-            newStageDialog.showDialog(false);
+            newStageDialog.showDialog(true);
             cancelInput = true;
 
             for (i in PolymodHandler.getAllMods()) {
@@ -439,9 +439,9 @@ class StageEditorTheSecond extends MusicBeatState {
         var newStageCallback = ()->{
 
             var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/newStageDialog"));
-            add(newStageDialog);
+            // add(newStageDialog);
             newStageDialog.screenCenter();
-            newStageDialog.showDialog(false);
+            newStageDialog.showDialog(true);
             cancelInput = true;
 
             for (i in PolymodHandler.getAllMods()) {
@@ -542,9 +542,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 deleteStageCallback();
             } else {
                 var deleteStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/deleteStageDialog"));
-                add(deleteStageDialog);
+                // add(deleteStageDialog);
                 deleteStageDialog.screenCenter();
-                deleteStageDialog.showDialog(false);
+                deleteStageDialog.showDialog(true);
                 cancelInput = true;
     
                 deleteStageDialog.findComponent("dialogContinue").color = 0xFFFF8888;
