@@ -101,9 +101,20 @@ import haxe.ds.Either;
 import funkin.modding.base.ScriptedFlxSpriteGroup;
 import funkin.modding.base.ScriptedMusicBeatState;
 
+import funkin.save.Save;
+
 using StringTools;
 
 class StageEditorTheSecond extends MusicBeatState {
+
+    var save = {
+		bind: (string1, string2)->{},
+		data: Save.fetchFromSlotRaw('nova-editors') ?? {
+			editorSong: null,
+            precacheChars: true,
+            precacheStages: true
+		}
+	};
 
     var history = [];
     var redoHistory = [];
@@ -214,34 +225,34 @@ class StageEditorTheSecond extends MusicBeatState {
     var hasCharacterEditorInstalled:Bool = false;
 
     var blacklist = [
-            "Main Stage",
-            "Main Stage [Erect]",
-            
-            "Spooky Mansion",
-            "Spooky Mansion [Erect]",
-            
-            "Christmas Mall (Nice)", 
-            "Christmas Mall (Naughty)", 
-            "Christmas Mall (Nice) [Erect]", 
-            
-            "Limo Ride", 
-            "Limo Ride [Erect]", 
-            
-            "Philly (Train)",
-            "Philly (Blazin')", 
-            "Philly (Streets)", 
-            "Philly (Train) [Erect]",
-            "Philly (Streets) [Erect]",
-            
-            "School (Date)",
-            "School (Hate)",
-            "School (Date) [Pico]",
-            "School (Date) [Erect]",
-            "School (Hate) [Erect]",
+        "Main Stage",
+        "Main Stage [Erect]",
+        
+        "Spooky Mansion",
+        "Spooky Mansion [Erect]",
+        
+        "Christmas Mall (Nice)", 
+        "Christmas Mall (Naughty)", 
+        "Christmas Mall (Nice) [Erect]", 
+        
+        "Limo Ride", 
+        "Limo Ride [Erect]", 
+        
+        "Philly (Train)",
+        "Philly (Blazin')", 
+        "Philly (Streets)", 
+        "Philly (Train) [Erect]",
+        "Philly (Streets) [Erect]",
+        
+        "School (Date)",
+        "School (Hate)",
+        "School (Date) [Pico]",
+        "School (Date) [Erect]",
+        "School (Hate) [Erect]",
 
-            "Tankman Battlefield",
-            "Tankman Battlefield [Erect]"
-        ];
+        "Tankman Battlefield",
+        "Tankman Battlefield [Erect]"
+    ];
 
     function new() {
         super('StageEditorTheSecond');
@@ -346,6 +357,16 @@ class StageEditorTheSecond extends MusicBeatState {
         super.create();
         Cursor.show();
         outlineShader.scriptCall('setThickness', [10]);
+
+        save.bind("nova-editors", "NebulaStellaNova");
+        if (save.data.editorSong == null) {
+            save.data.editorSong = {
+                title: "Artistic Expression",
+                key: "chartEditorLoop"
+            }
+        }
+		FunkinSound.playMusic(save.data.editorSong.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+		FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
 
 		var chartEditor = new ChartEditorState();
 
@@ -513,7 +534,7 @@ class StageEditorTheSecond extends MusicBeatState {
         var deleteStageButton = menuBar.findComponent("deleteStage");
         deleteStageButton.onClick = ()->{
             if (currentStage.id == "mainStage") {
-                newNotification("Error!", 'Could not delete stage!\n"assets" is protected.', NotificationType.Error, 5000);
+                newNotification("Error!", 'Could not delete stage!\n"assets" folder is protected.', NotificationType.Error, 5000);
                 return;
             }
 
@@ -581,7 +602,7 @@ class StageEditorTheSecond extends MusicBeatState {
             /* trace(stringed);
             trace(currentStage.id); */
             if (currentStage.id == "mainStage") {
-                newNotification("Error!", 'Could not save stage!\n"assets" is protected.', NotificationType.Error, 5000);
+                newNotification("Error!", 'Could not save stage!\n"assets" folder is protected.', NotificationType.Error, 5000);
                 return;
             }
 		    for (mod in PolymodHandler.getAllMods()) {
@@ -1456,6 +1477,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         var musicMenu = menuBar.findComponent("musicMenu");
         musicMenu.dataSource.add({text: "Freaky Menu", id: "freakyMenu"});
+        
         var folders = [
             "assets/shared/music/",
             "assets/music/"
@@ -1476,7 +1498,12 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
                 musicMenu.dataSource.add({text: name, id: file});
                 musicMenu.onChange = ()->{
+                    save.data.editorSong = {
+                        title: musicMenu.selectedItem.text,
+                        key: musicMenu.selectedItem.id
+                    }
                     FunkinSound.playMusic(musicMenu.selectedItem.id, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+                    
                     // FlxG.sound.music.fadeIn(0.5, 0, 1);
                 }
                 /* var thing = new MenuItem();
@@ -1688,8 +1715,17 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var forceUpdateBounds = false;
 
+    var focusTimer = 0;
+    var allowFocusTimer = false;
+
     function update(elapsed) {
-        super.update(elapsed);        
+        super.update(elapsed);
+        
+        if (focusTimer > 0 && allowFocusTimer) {
+            focusTimer--;
+            return;
+        }
+        
         get_conductorInUse().update();
 
         for (i in 0...propListView.dataSource.size) {
@@ -1836,7 +1872,7 @@ class StageEditorTheSecond extends MusicBeatState {
         updateTransformTool();
 
         yLine.scale.x = 2 / camGame.zoom;
-        yLine.scale.y = FlxG.height * (1/camGame.zoom);
+        yLine.scale.y = FlxG.height * (1/camGame.zoom) * 2;
         yLine.screenCenter();
         yLine.updateHitbox();
         yLine.x = -yLine.width/2;
@@ -1844,47 +1880,54 @@ class StageEditorTheSecond extends MusicBeatState {
         yLine.visible = camHUD.visible;
 
         xLine.scale.y = 2 / camGame.zoom;
-        xLine.scale.x = FlxG.width * (1/camGame.zoom);
+        xLine.scale.x = FlxG.width * (1/camGame.zoom) * 2;
         xLine.screenCenter();
         xLine.updateHitbox();
         xLine.y = -xLine.height/2;
         xLine.scrollFactor.x = 0;
         xLine.visible = camHUD.visible;
 
-        playerBoundingBox.alpha = opponentBoundingBox.alpha = spectatorBoundingBox.alpha = camHUD.visible ? 1 : 0;
+        playerBoundingBox.alpha = opponentBoundingBox.alpha = spectatorBoundingBox.alpha = camHUD.visible ? (!FlxG.keys.pressed.Q && !FlxG.keys.pressed.E ? 1 : 0) : 0;
 
-        /* if ((playerBoundingBox.shapeWidth == playerBoundingBox.shapeHeight && playerBoundingBox.shapeWidth == 200) || forceUpdateBounds)    
-            resetChars(); */
-
-        if (playerBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
-            playerBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
-            playerBoundingBox.redrawShape();
-            playerBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
-            playerBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
-            playerBoundingBox.updateHitbox();
-            playerBoundingBox.x = player.cameraFocusPoint.x - (playerBoundingBox.width/2) + currentStage._data.characters.bf.cameraOffsets[0] + 2;
-            playerBoundingBox.y = player.cameraFocusPoint.y - (playerBoundingBox.height/2) + currentStage._data.characters.bf.cameraOffsets[1] + 2;
+        if (!FlxG.keys.pressed.Q && !FlxG.keys.pressed.E) {
+    
+    
+            /* if ((playerBoundingBox.shapeWidth == playerBoundingBox.shapeHeight && playerBoundingBox.shapeWidth == 200) || forceUpdateBounds)    
+                resetChars(); */
+    
+            if (playerBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
+                playerBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+                playerBoundingBox.redrawShape();
+                playerBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+                playerBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+                playerBoundingBox.updateHitbox();
+                playerBoundingBox.x = player.cameraFocusPoint.x - (playerBoundingBox.width/2) + currentStage._data.characters.bf.cameraOffsets[0] + 2;
+                playerBoundingBox.y = player.cameraFocusPoint.y - (playerBoundingBox.height/2) + currentStage._data.characters.bf.cameraOffsets[1] + 2;
+            }
+    
+            if (opponentBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
+                opponentBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+                opponentBoundingBox.redrawShape();
+                opponentBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+                opponentBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+                opponentBoundingBox.updateHitbox();
+                opponentBoundingBox.x = opponent.cameraFocusPoint.x - (opponentBoundingBox.width/2) + currentStage._data.characters.dad.cameraOffsets[0] + 2;
+                opponentBoundingBox.y = opponent.cameraFocusPoint.y - (opponentBoundingBox.height/2) + currentStage._data.characters.dad.cameraOffsets[1] + 2;
+            }
+    
+            if (spectatorBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
+                spectatorBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+                spectatorBoundingBox.redrawShape();
+                spectatorBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+                spectatorBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+                spectatorBoundingBox.updateHitbox();
+                spectatorBoundingBox.x = spectator.cameraFocusPoint.x - (spectatorBoundingBox.width/2) + currentStage._data.characters.gf.cameraOffsets[0] + 2;
+                spectatorBoundingBox.y = spectator.cameraFocusPoint.y - (spectatorBoundingBox.height/2) + currentStage._data.characters.gf.cameraOffsets[1] + 2;
+            }
         }
 
-        if (opponentBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
-            opponentBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
-            opponentBoundingBox.redrawShape();
-            opponentBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
-            opponentBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
-            opponentBoundingBox.updateHitbox();
-            opponentBoundingBox.x = opponent.cameraFocusPoint.x - (opponentBoundingBox.width/2) + currentStage._data.characters.dad.cameraOffsets[0] + 2;
-            opponentBoundingBox.y = opponent.cameraFocusPoint.y - (opponentBoundingBox.height/2) + currentStage._data.characters.dad.cameraOffsets[1] + 2;
-        }
 
-        if (spectatorBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) {
-            spectatorBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
-            spectatorBoundingBox.redrawShape();
-            spectatorBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
-            spectatorBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
-            spectatorBoundingBox.updateHitbox();
-            spectatorBoundingBox.x = spectator.cameraFocusPoint.x - (spectatorBoundingBox.width/2) + currentStage._data.characters.gf.cameraOffsets[0] + 2;
-            spectatorBoundingBox.y = spectator.cameraFocusPoint.y - (spectatorBoundingBox.height/2) + currentStage._data.characters.gf.cameraOffsets[1] + 2;
-        }
+
 
         forceUpdateBounds = false;
  
@@ -1926,6 +1969,7 @@ class StageEditorTheSecond extends MusicBeatState {
     }
 
     function updateTransformTool() {
+        if (FlxG.keys.pressed.Q || FlxG.keys.pressed.E) return;
         if (camInteract != null) {
             camInteract.scroll.x = camGame.scroll.x;
             camInteract.scroll.y = camGame.scroll.y;
@@ -2342,6 +2386,7 @@ class StageEditorTheSecond extends MusicBeatState {
     function destroy() {
         super.destroy();
         Cursor.hide();
+        Save.writeToAvailableSlot('nova-editors', save.data);
     }
 
     public function test() {
@@ -2481,6 +2526,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
             player.playAnimation(player._data.animations[0].name);
             player.animation.finish();
+            player.updateHitbox();
         }
         if (opponent != null) {
             opponent.zIndex = currentStage._data.characters.dad.zIndex;
@@ -2503,6 +2549,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
             opponent.playAnimation(opponent._data.animations[0].name);
             opponent.animation.finish();
+            opponent.updateHitbox();
         }
 
         if (spectator != null) {
@@ -2526,6 +2573,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
             spectator.playAnimation(spectator._data.animations[0].name);
             spectator.animation.finish();
+            spectator.updateHitbox();
         }
         currentStage.refresh();
     }
@@ -2585,5 +2633,16 @@ class StageEditorTheSecond extends MusicBeatState {
         //add(outerRing);
         //theCircle.add(outerRing);
         return theCircle;
+    }
+
+    override function onFocusLost(e) {
+        super.onFocusLost(e);
+        allowFocusTimer = false;
+    }
+
+    override function onFocus(e) {
+        super.onFocus(e);
+        allowFocusTimer = true;
+        focusTimer = 3;
     }
 }

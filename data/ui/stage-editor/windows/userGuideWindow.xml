@@ -84,6 +84,20 @@
         <box text="Change Log">
             <scroll-view width="449" height="445" contentWidth="100%">
                 <vbox>
+                    <frame text="v2.0.6" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added song choice saving." />
+                            <spacer />
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed lag when zooming." />
+                            <label text="• Fixed positions of characters being wrong when scaling." />
+                            <label text="• Fixed camera and objects snapping when clicking back \n  onto the game window." />
+                            <spacer />
+                        </vbox>
+                    </frame>
                     <frame text="v2.0.5" width="425">
                         <vbox>
                             <label text="—— Additions ——" />
@@ -111,15 +125,15 @@
                     </frame>
                     <frame text="v2.0.2" width="425">
                         <vbox>
-                            <label text="—— Fixes ——" />
-                            <spacer />
-                            <label text="• Fixed Camera Movement Being Framerate Dependent." />
-                            <spacer />
-                            <spacer />
                             <label text="—— Additions ——" />
                             <spacer />
                             <label text="• Added Prop Transform Tool." />
                             <label text="• Added FAQ Tab in User Guide." />
+                            <spacer />
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed Camera Movement Being Framerate Dependent." />
+                            <spacer />
                             <spacer />
                             <label text="—— Tweaks ——" />
                             <spacer />
@@ -129,14 +143,14 @@
                     </frame>
                     <frame text="v2.0.1" width="425">
                         <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Changelog tab in User Guide window." />
+                            <spacer />
                             <label text="—— Fixes ——" />
                             <spacer />
                             <label text="• Fixed Scaling Props Not Working." />
                             <spacer />
-                            <spacer />
-                            <label text="—— Additions ——" />
-                            <spacer />
-                            <label text="• Changelog tab in User Guide window." />
                             <spacer />
                         </vbox>
                     </frame>
