@@ -89,12 +89,22 @@
                             <label text="—— Additions ——" />
                             <spacer />
                             <label text="• Added song choice saving." />
+                            <label text="• Added right click menu for props." />
+                            <label text="• Added X and Y line toggle to view menu." />
+                            <label text="• Added ability to move camera with mouse when prop is\n  selected by clicking outside of it." />
                             <spacer />
                             <label text="—— Fixes ——" />
                             <spacer />
                             <label text="• Fixed lag when zooming." />
+                            <label text="• Fixed X and Y lines clipping when zooming." />
+                            <label text="• Fixed default prop animation not playing when changed." />
                             <label text="• Fixed positions of characters being wrong when scaling." />
                             <label text="• Fixed camera and objects snapping when clicking back \n  onto the game window." />
+                            <spacer />
+                            <label text="—— Tweaks ——" />
+                            <spacer />
+                            <label text="• Made Close/Apply not deselect the selected prop." />
+                            <label text="• Made Close/Apply not deselect the selected character." />
                             <spacer />
                         </vbox>
                     </frame>
@@ -150,7 +160,6 @@
                             <label text="—— Fixes ——" />
                             <spacer />
                             <label text="• Fixed Scaling Props Not Working." />
-                            <spacer />
                             <spacer />
                         </vbox>
                     </frame>
