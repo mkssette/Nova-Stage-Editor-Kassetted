@@ -90,6 +90,8 @@ import funkin.modding.base.ScriptedFlxRuntimeShader;
 import flixel.math.FlxAngle;
 import flixel.math.FlxPoint;
 
+import flixel.text.FlxText;
+
 import haxe.Json;
 
 import StringTools;
@@ -106,6 +108,8 @@ import funkin.save.Save;
 using StringTools;
 
 class StageEditorTheSecond extends MusicBeatState {
+
+    var np = [];
 
     var save = {
 		bind: (string1, string2)->{},
@@ -413,6 +417,19 @@ class StageEditorTheSecond extends MusicBeatState {
         var idList = [];
         for (i in CharacterDataParser.characterCache.keys()) {
             nameList.push(CharacterDataParser.characterCache.get(i).name);
+            if (save.data.precacheChars) {
+                var c = CharacterDataParser.characterCache.get(i);
+                var assetsToLoad = [];
+                assetsToLoad.push(c.assetPath);
+                for (i in c.animations) {
+                    if (i.assetPath != null) {
+                        assetsToLoad.push(i.assetPath);
+                    }
+                }
+                for (i in assetsToLoad) {
+                    new FunkinSprite().loadGraphic(Paths.image(i));
+                }
+            }
             idList.push(CharacterDataParser.characterCache.get(i).id);
         }
         nameList.sort(SortUtil.alphabetically);
@@ -443,6 +460,16 @@ class StageEditorTheSecond extends MusicBeatState {
 
         bind(resetCamera, MouseEvent.CLICK, resetCameraCallback);
         newKeybind(["CONTROL", "SHIFT", "R"], resetCameraCallback);
+
+        menuBar.findComponent("precacheCharacters").selected = save.data.precacheChars;
+        menuBar.findComponent("precacheCharacters").onChange = ()->{
+            save.data.precacheChars = menuBar.findComponent("precacheCharacters").selected;
+        }
+
+        menuBar.findComponent("precacheStages").selected = save.data.precacheStages;
+        menuBar.findComponent("precacheStages").onChange = ()->{
+            save.data.precacheStages = menuBar.findComponent("precacheStages").selected;
+        }
 
         add(menuBar);
 
@@ -690,6 +717,7 @@ class StageEditorTheSecond extends MusicBeatState {
                     currentStage._data.props.remove(i);
                 }
             }
+            deselectStage();
             refreshPropList();
             reloadStage();
             resetChars();
@@ -903,6 +931,7 @@ class StageEditorTheSecond extends MusicBeatState {
                             offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
                             windowManager.closeWindow(editAnimationsWindow);
                             editAnimToggle = false;
+                            selectedProp.updateHitbox();
                         });
 
                         var acc1 = editAnimationsWindow.findComponent("ac1");
@@ -995,7 +1024,7 @@ class StageEditorTheSecond extends MusicBeatState {
                                     for (i2 in getSelectedPropData().animations) {
                                         acc1.findComponent(i2.name).findComponent("editPropWindowIsDefaultCheckbox").selected = getSelectedPropData().startingAnimation == i2.name;
                                     }
-                                    selectedProp.playAnimation(getSelectedPropData().startingAnimation, true);
+                                    selectedProp.animation.play(getSelectedPropData().startingAnimation, true);
                                 }
 
                                 acc1.addComponent(animation);
@@ -1326,6 +1355,32 @@ class StageEditorTheSecond extends MusicBeatState {
         xLine.alpha = 0.5;
         add(xLine);
 
+        var index = 0;
+        for (i in ["(-x, -y)", "(+x, -y)", "(-x, +y)", "(+x, +y)"]) {
+            var negativePositive = new FlxText(0, 0, null, i);
+            negativePositive.antialiasing = false;
+            negativePositive.updateHitbox();
+            switch (index) {
+                case 0:
+                    negativePositive.x -= negativePositive.width;
+                    negativePositive.y -= negativePositive.height;
+                case 1:
+                    // negativePositive.x += negativePositive.width;
+                    negativePositive.y -= negativePositive.height;
+                case 2:
+                    negativePositive.x -= negativePositive.width;
+                    // negativePositive.y += negativePositive.height;
+                case 3:
+                    // negativePositive.x += negativePositive.width;
+                    // negativePositive.y += negativePositive.height;
+
+            }
+            negativePositive.cameras = [camGame];
+            np.push(negativePositive);
+            add(negativePositive);
+            index++;
+        }
+
         var editCharacterButton = stageDataWindow.findComponent("editCharacterButton");
         editCharacterButton.onClick = ()->{
             if (selectedCharacter == null) {
@@ -1613,26 +1668,42 @@ class StageEditorTheSecond extends MusicBeatState {
             });
         };
        
-        menuBar.findComponent("viewFromPlayer").onClick = ()->{
+        var viewFromPlayerCallback = ()->{
+            FlxTween.cancelTweensOf(camGame.zoom);
+            FlxTween.cancelTweensOf(camGame.scroll);
+            resetCameraCallback();
             FlxTween.tween(camGame.scroll, { 
                 x: player.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.bf.cameraOffsets[0],
                 y: player.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.bf.cameraOffsets[1]
             }, 0.25, { ease: FlxEase.quartOut });
         }
+        menuBar.findComponent("viewFromPlayer").onClick = viewFromPlayerCallback;
+        newKeybind(["THREE"], viewFromPlayerCallback, "justPressed");
 
-        menuBar.findComponent("viewFromOpponent").onClick = ()->{
+        var viewFromOpponentCallback = ()->{
+            FlxTween.cancelTweensOf(camGame.zoom);
+            FlxTween.cancelTweensOf(camGame.scroll);
+            resetCameraCallback();
             FlxTween.tween(camGame.scroll, { 
                 x: opponent.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.dad.cameraOffsets[0],
                 y: opponent.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.dad.cameraOffsets[1]
             }, 0.25, { ease: FlxEase.quartOut });
         }
 
-        menuBar.findComponent("viewFromSpectator").onClick = ()->{
+        menuBar.findComponent("viewFromOpponent").onClick = viewFromOpponentCallback;
+        newKeybind(["ONE"], viewFromOpponentCallback, "justPressed");
+
+        var viewFromSpectatorCallback = ()->{
+            FlxTween.cancelTweensOf(camGame.zoom);
+            FlxTween.cancelTweensOf(camGame.scroll);
             FlxTween.tween(camGame.scroll, { 
                 x: spectator.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.gf.cameraOffsets[0],
                 y: spectator.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.gf.cameraOffsets[1]
             }, 0.25, { ease: FlxEase.quartOut });
         }
+
+        menuBar.findComponent("viewFromSpectator").onClick = viewFromSpectatorCallback;
+        newKeybind(["TWO"], viewFromSpectatorCallback, "justPressed");
 
 
         lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
@@ -1892,9 +1963,37 @@ class StageEditorTheSecond extends MusicBeatState {
                 camGame.scroll.x -= (FlxG.mouse.deltaX/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.x : 1);
                 camGame.scroll.y -= (FlxG.mouse.deltaY/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.y : 1);
             }
+        }
+        if (!cancelInput) {
             if (FlxG.mouse.wheel != 0) {
                 camGame.zoom += FlxG.mouse.wheel/10;
             }
+        }
+        
+
+        var npIndex = 0;
+        for (negativePositive in np) {
+            negativePositive.x = 0;
+            negativePositive.y = 0;
+            negativePositive.alpha = xLine.alpha;
+            negativePositive.scale.set(2/camGame.zoom, 2/camGame.zoom);
+            negativePositive.antialiasing = false;
+            negativePositive.updateHitbox();
+            switch (npIndex) {
+                case 0:
+                    negativePositive.x -= negativePositive.width + (10/camGame.zoom);
+                    negativePositive.y -= negativePositive.height + (10/camGame.zoom);
+                case 1:
+                    negativePositive.x += (10/camGame.zoom);
+                    negativePositive.y -= negativePositive.height + (10/camGame.zoom);
+                case 2:
+                    negativePositive.x -= negativePositive.width + (10/camGame.zoom);
+                    negativePositive.y += (10/camGame.zoom);
+                case 3:
+                    negativePositive.x += (10/camGame.zoom);
+                    negativePositive.y += (10/camGame.zoom);
+            }
+            npIndex++;
         }
 
         if (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) updateTransformTool();
@@ -2029,7 +2128,14 @@ class StageEditorTheSecond extends MusicBeatState {
         return FlxG.mouse.overlaps(tLC, camGame) || FlxG.mouse.overlaps(tMC, camGame) || FlxG.mouse.overlaps(tRC, camGame) || FlxG.mouse.overlaps(mRC, camGame) || FlxG.mouse.overlaps(bRC, camGame) || FlxG.mouse.overlaps(bMC, camGame) || FlxG.mouse.overlaps(bLC, camGame) || FlxG.mouse.overlaps(mLC, camGame);
     }
 
+    var previous = "something";
     function updateTransformTool() {
+        var skip = false;
+        if (previous != selectedProp) {
+            previous = selectedProp;
+            skip = true;
+        }
+        if (previous == null && !skip) return;
         // if (FlxG.keys.pressed.Q || FlxG.keys.pressed.E) return;
         if (camInteract != null) {
             camInteract.scroll.x = camGame.scroll.x;
@@ -2435,9 +2541,24 @@ class StageEditorTheSecond extends MusicBeatState {
         }
     }
 
+    var danceToggle = false;
     override function beatHit() {
         super.beatHit();
         var curBeat = get_conductorInUse().currentBeat;
+
+        for (i in [player, opponent, spectator]) {
+            if (curBeat % i._data.danceEvery == 0) {
+                if (i._data.startingAnimation == "danceRight" || i._data.startingAnimation == "danceLeft") {
+                    i.playAnimation(danceToggle ? "danceRight" : "danceLeft");
+                } else {
+                    i.playAnimation(i._data.startingAnimation ?? "idle");
+                }
+                // player.playAnimation(, true);
+                // player.playAnimation("idle", true);
+            }
+            // test
+        }
+        danceToggle = !danceToggle;
     }
     override function stepHit() {
         super.stepHit();
@@ -2647,11 +2768,12 @@ class StageEditorTheSecond extends MusicBeatState {
         
         customStageRegistry.set("mainStage", data._data);
         stageList.dataSource.add({ text: "Main Stage", id: "mainStage" });
-
+        
         for (i in stageRegistry.entries.keys()) {
             if (!blacklist.contains(stageRegistry.entries.get(i).stageName)) {
                 var data = new Stage(i);
-                data.onCreate();
+                if (save.data.precacheStages)
+                    data.onCreate();
                 customStageRegistry.set(i, data._data);
                 stageList.dataSource.add({ text: stageRegistry.entries.get(i).stageName, id: i });
             }

@@ -32,6 +32,7 @@
     <menu-item id="stageDataWindow" text="Stage Data" />
   </menu> -->
 
+    
     <menu text="View" width="300">
         <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
         <menu-separator />
@@ -61,6 +62,11 @@
             <slider id="menubarItemVolumeInstrumental" width="100%" majorTicks="10" minorTicks="5"
                 pos="100" />
         </vbox>
+    </menu>
+
+    <menu text="Preferences" width="300">
+        <menucheckbox id="precacheStages" text=" Pre-Load Stages" shortcutText="(Reload Required)" tooltip="Disable this if you're experiencing lag.\n\n(REQUIRES YOU RELOAD THE EDITOR)"/>
+        <menucheckbox id="precacheCharacters" text=" Pre-Load Characters" shortcutText="(Reload Required)" tooltip="Disable this if you're experiencing lag.\n\n(REQUIRES YOU RELOAD THE EDITOR)"/>
     </menu>
 
     <menu text="Help" width="300">
