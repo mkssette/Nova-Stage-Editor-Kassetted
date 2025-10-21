@@ -88,14 +88,23 @@
         <box text="Change Log">
             <scroll-view width="449" height="445" contentWidth="100%">
                 <vbox>
+                    <frame text="v2.0.8" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed changelog." />
+                            <label text="• Fixed potential crash related to onBeatHit." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+
                     <frame text="v2.0.7" width="425">
                         <vbox>
                             <label text="—— Additions ——" />
                             <spacer />
                             <label text="• Added preferences tab." />
                             <label text="• Added positive/negative markers for x and y lines." />
-                            <label text="—— Fixes ——" />
                             <spacer />
+                            <label text="—— Fixes ——" />
                             <label text="• Fixed Is Default crashing when changed in prop animation \n  list." />
                             <label text="• Fixed game crashing when deleting the last prop in a \n  stage." />
                             <spacer />

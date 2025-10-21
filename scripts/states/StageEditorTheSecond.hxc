@@ -2547,6 +2547,7 @@ class StageEditorTheSecond extends MusicBeatState {
         var curBeat = get_conductorInUse().currentBeat;
 
         for (i in [player, opponent, spectator]) {
+            if (i == null) continue;
             if (curBeat % i._data.danceEvery == 0) {
                 if (i._data.startingAnimation == "danceRight" || i._data.startingAnimation == "danceLeft") {
                     i.playAnimation(danceToggle ? "danceRight" : "danceLeft");
