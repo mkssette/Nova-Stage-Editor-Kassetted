@@ -954,7 +954,7 @@ class StageEditorTheSecond extends MusicBeatState {
                                 assetPathTextField.onChange = ()->{
                                     i.assetPath = assetPathTextField.text;
                                     animation.text = i.assetPath;
-                                    animation.id = i.assetPath;
+                                    // animation.id = i.assetPath;
                                 }
 
                                 var nameTextField = animation.findComponent("editAnimWindowAnimNameTextField");
