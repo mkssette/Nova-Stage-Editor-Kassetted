@@ -1,3 +1,7 @@
+import flixel.math.FlxMath;
+
+import cpp.vm.Gc;
+
 import funkin.ui.MusicBeatState;
 
 import funkin.audio.FunkinSound;
@@ -1328,13 +1332,13 @@ class StageEditorTheSecond extends MusicBeatState {
 
         initNotification();
 
-        newKeybind(["W"], (elapsed) -> !cancelInput ? camGame.scroll.y -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
-        newKeybind(["A"], (elapsed) -> !cancelInput ? camGame.scroll.x -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
-        newKeybind(["S"], (elapsed) -> !cancelInput ? camGame.scroll.y += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
-        newKeybind(["D"], (elapsed) -> !cancelInput ? camGame.scroll.x += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["W"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.y -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["A"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.x -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["S"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.y += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["D"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.x += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
 
-        newKeybind(["Q"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom -= (0.015 * elapsed) * 100 : 0, "pressed");
-        newKeybind(["E"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL) ? camGame.zoom += (0.015 * elapsed) * 100 : 0, "pressed");
+        newKeybind(["Q"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL && !FlxG.mouse.overlaps(stageDataWindow)) ? camGame.zoom -= (0.015 * elapsed) * 100 : 0, "pressed");
+        newKeybind(["E"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL && !FlxG.mouse.overlaps(stageDataWindow)) ? camGame.zoom += (0.015 * elapsed) * 100 : 0, "pressed");
 
         newKeybind(["CONTROL", "E"], ()->camHUD.visible = !camHUD.visible);
 
@@ -1959,13 +1963,13 @@ class StageEditorTheSecond extends MusicBeatState {
         updateTransformTool();
 
         if (!cancelInput && (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) && selectedCharacter == null) {
-            if (FlxG.mouse.pressed) {
+            if (FlxG.mouse.pressed && !FlxG.mouse.overlaps(stageDataWindow) && !FlxG.mouse.overlaps(menuBar)) {
                 camGame.scroll.x -= (FlxG.mouse.deltaX/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.x : 1);
                 camGame.scroll.y -= (FlxG.mouse.deltaY/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.y : 1);
             }
         }
         if (!cancelInput) {
-            if (FlxG.mouse.wheel != 0) {
+            if (FlxG.mouse.wheel != 0 && !FlxG.mouse.overlaps(stageDataWindow)) {
                 camGame.zoom += FlxG.mouse.wheel/10;
             }
         }
@@ -2144,6 +2148,8 @@ class StageEditorTheSecond extends MusicBeatState {
             camInteract.visible = selectedProp != null;
         }
         
+        if (selectedProp == null) return;
+
         var selectedObj = selectedProp != null ? selectedProp : (selectedCharacter != null ? selectedCharacter : null);
 
         if (selectedProp != null && tLC != null) {

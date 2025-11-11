@@ -88,6 +88,13 @@
         <box text="Change Log">
             <scroll-view width="449" height="445" contentWidth="100%">
                 <vbox>
+                    <frame text="v2.1.0" width="425">
+                        <vbox>
+                            <label text="—— Tweak ——" />
+                            <label text="• Made it so if cursor is over stage data window input\n  is cancelled." />
+                            <spacer />
+                        </vbox>
+                    </frame>
                     <frame text="v2.0.9" width="425">
                         <vbox>
                             <label text="—— Fixes ——" />
