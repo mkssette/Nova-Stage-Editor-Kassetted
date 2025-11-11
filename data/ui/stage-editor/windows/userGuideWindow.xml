@@ -88,6 +88,13 @@
         <box text="Change Log">
             <scroll-view width="449" height="445" contentWidth="100%">
                 <vbox>
+                    <frame text="v2.1.1" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed transform tool causing memory leak every frame." />
+                            <spacer />
+                        </vbox>
+                    </frame>
                     <frame text="v2.1.0" width="425">
                         <vbox>
                             <label text="—— Tweak ——" />

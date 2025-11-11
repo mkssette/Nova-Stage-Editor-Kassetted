@@ -1,50 +1,78 @@
+// Automatically converted with https://github.com/TheLeerName/ShadertoyToFlixel
+
 #pragma header
 
-// Uniforms provided by the OpenFL/Flixel framework
-// These are declared by #pragma header, so we don't need to redeclare them.
-uniform sampler2D bitmap;
-uniform float thickness; // thickness is not a standard uniform, we will keep this.
-uniform vec2 openfl_TextureCoordv;
-uniform vec2 openfl_TextureSize;
+#define iResolution vec3(openfl_TextureSize, 0.)
+uniform float iTime;
+#define iChannel0 bitmap
+#define texture flixel_texture2D
 
-void main()
+// end of ShadertoyToFlixel header
+
+// Controls the opacity of the drawn line segment (e.g., 0.5)
+float u_outlineAlpha = 0.5; 
+
+// NEW: Controls the thickness of the outline in screen-space pixels (e.g., 4.0 for 4px)
+float u_thickness = 5.0; 
+    
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    // Use the provided variable names
-    vec2 uv = openfl_TextureCoordv;
-    vec2 texSize = openfl_TextureSize;
+	vec2 uv = fragCoord.xy / iResolution.xy;
+    
+    // --- Uniforms (Standard Shadertoy/GLSL inputs) ---
+    
+    // Define colors
+    vec3 outlineColor = vec3(0.0, 1.0, 1.0); // Bright Cyan line
+    vec3 gapColor = vec3(0.0, 0.0, 0.0);    // Black gap
 
-    // Get the current pixel's color from the texture
-    vec4 current = flixel_texture2D(bitmap, uv);
+    // rect boundaries (reverted to full screen as requested)
+    vec2 rectMin = vec2(0.0, 0.0); 
+    vec2 rectMax = vec2(1.0, 1.0);
+    
+    vec2 center = (rectMin + rectMax) / 2.0;
+    vec2 halfSize = center - rectMin;
+    vec2 fw = fwidth(uv);
+    
+    vec2 dist = abs(uv - center);
+    
+    // 1. Sample the background texture (this is the base color for non-outline pixels)
+    vec4 textureColor = texture(iChannel0, uv);
+    vec3 finalColor = textureColor.rgb;
+    
+    // Check if the pixel is within the custom thickness band.
+    // We multiply fwidth (1 screen pixel size) by u_thickness.
+    bool isOutline = all(lessThan(dist, halfSize)) && any(greaterThan(dist, halfSize - fw * u_thickness));
 
-    // If the current pixel is part of the object, render it and exit
-    if (current.a > 0.0)
-    {
-        gl_FragColor = current;
-        return;
+    if (isOutline) {
+        // Calculate screen-space pixel coordinate for consistent dashing
+        vec2 pixel = uv / fw; 
+        float aspect = halfSize.y / halfSize.x;
+        
+        // Determine the direction along the edge for uniform motion
+        float dir = (dist.x * aspect > dist.y) ?
+             -sign(uv.x - center.x) : sign(uv.y - center.y);
+        
+        // Calculate the dash pattern (0.0=Line, 1.0=Gap)
+        // Reduced the divisor from 20.0 to 10.0 for shorter/faster dashes, matching original request.
+        float dash = step(0.5, fract((pixel.x + pixel.y) * dir / 10.0 + iTime));
+        
+        // A. Calculate the color of the dashed segment (Cyan or Black)
+        vec3 outlineDashedColor = mix(outlineColor, gapColor, dash);
+        
+        // B. Calculate the opacity/mix factor:
+        //    - If dash=0.0 (Line segment), the factor is u_outlineAlpha.
+        //    - If dash=1.0 (Gap segment), the factor is 0.0 (fully transparent).
+        float alphaFactor = mix(u_outlineAlpha, 0.0, dash);
+        
+        // C. Blend the calculated outline color (fore) over the background (base)
+        finalColor = mix(finalColor, outlineDashedColor, alphaFactor);
     }
+    
+    // Output the final blended color. We use the original texture's alpha channel
+    // for the final output alpha so that the whole composition respects transparency.
+	fragColor = vec4(finalColor, texture(iChannel0, fragCoord / iResolution.xy).a);
+}
 
-    // If the pixel is transparent, check its neighbors for an outline
-    float alpha = 0.0;
-    // The loop iterates in a 3x3 grid around the current pixel
-    for (float x = -1.0; x <= 1.0; x++)
-    {
-        for (float y = -1.0; y <= 1.0; y++)
-        {
-            // Calculate the offset using the thickness uniform
-            vec2 offset = vec2(x, y) * thickness / texSize;
-            
-            // Sample the alpha of the neighboring pixel
-            vec4 sample = flixel_texture2D(bitmap, uv + offset);
-            
-            // Keep track of the highest alpha found in the neighborhood
-            alpha = max(alpha, sample.a);
-        }
-    }
-
-    // If any neighbor had an alpha greater than 0, draw a white outline
-    if (alpha > 0.0)
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    else
-        // Otherwise, render a fully transparent pixel
-        gl_FragColor = vec4(0.0);
+void main() {
+	mainImage(gl_FragColor, openfl_TextureCoordv*openfl_TextureSize);
 }

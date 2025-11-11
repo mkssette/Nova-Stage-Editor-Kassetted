@@ -89,7 +89,7 @@ import flixel.util.FlxTimer;
 
 import funkin.play.character.CharacterType;
 
-import funkin.modding.base.ScriptedFlxRuntimeShader;
+import flixel.addons.display.FlxRuntimeShader;
 
 import flixel.math.FlxAngle;
 import flixel.math.FlxPoint;
@@ -127,7 +127,7 @@ class StageEditorTheSecond extends MusicBeatState {
     var history = [];
     var redoHistory = [];
 
-    var outlineShader = ScriptedFlxRuntimeShader.init('WhiteOutlineRuntimeShader');
+    var outlineShader = new FlxRuntimeShader(Assets.getText(Paths.frag("WhiteOutline")));
 
     // -- box???? -- \\
     var playerBoundingBox;
@@ -376,7 +376,7 @@ class StageEditorTheSecond extends MusicBeatState {
     function create() {
         super.create();
         Cursor.show();
-        outlineShader.scriptCall('setThickness', [10]);
+        // outlineShader.scriptCall('setThickness', [10]);
 
         save.bind("nova-editors", "NebulaStellaNova");
         if (save.data.editorSong == null) {
@@ -1165,6 +1165,8 @@ class StageEditorTheSecond extends MusicBeatState {
             target ??= 1;
             propListView.selectedItems = [];
             propListView.selectedItem = null;
+            if (selectedProp != null)
+                selectedProp.shader = null;
             selectedProp = null;
             var index = 0;
             for (i in currentStage.members) {
@@ -1251,7 +1253,10 @@ class StageEditorTheSecond extends MusicBeatState {
         propListView.onChange = propListViewCallback = ()->{
             /* xLine.scrollFactor.y = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.y;
             yLine.scrollFactor.x = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.x; */
+            if (selectedProp != null)
+                selectedProp.shader = null;
             selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
+            selectedProp.shader = outlineShader;
 
             currentStage.forEachAlive((i)->{
                 if (i.name == opponent.name || i.name == player.name || i.name == spectator.name) {
@@ -1730,65 +1735,33 @@ class StageEditorTheSecond extends MusicBeatState {
         tLC.cameras = [camInteract];
         add(tLC);
         
-        tLCi = getCornerCircle(false);
-        tLCi.cameras = [camInteract];
-        add(tLCi);
-        
         tMC = getCornerCircle(true);
         tMC.cameras = [camInteract];
         add(tMC);
-        
-        tMCi = getCornerCircle(false);
-        tMCi.cameras = [camInteract];
-        add(tMCi);
 
         mLC = getCornerCircle(true);
         mLC.cameras = [camInteract];
         add(mLC);
-        
-        mLCi = getCornerCircle(false);
-        mLCi.cameras = [camInteract];
-        add(mLCi);
 
         tRC = getCornerCircle(true);
         tRC.cameras = [camInteract];
         add(tRC);
-        
-        tRCi = getCornerCircle(false);
-        tRCi.cameras = [camInteract];
-        add(tRCi);
 
         mRC = getCornerCircle(true);
         mRC.cameras = [camInteract];
         add(mRC);
-        
-        mRCi = getCornerCircle(false);
-        mRCi.cameras = [camInteract];
-        add(mRCi);
 
         bLC = getCornerCircle(true);
         bLC.cameras = [camInteract];
         add(bLC);
-        
-        bLCi = getCornerCircle(false);
-        bLCi.cameras = [camInteract];
-        add(bLCi);
 
         bRC = getCornerCircle(true);
         bRC.cameras = [camInteract];
         add(bRC);
-        
-        bRCi = getCornerCircle(false);
-        bRCi.cameras = [camInteract];
-        add(bRCi);
 
         bMC = getCornerCircle(true);
         bMC.cameras = [camInteract];
         add(bMC);
-        
-        bMCi = getCornerCircle(false);
-        bMCi.cameras = [camInteract];
-        add(bMCi);
 
         cC = getCornerCircle(true);
         cC.cameras = [camInteract];
@@ -1816,6 +1789,8 @@ class StageEditorTheSecond extends MusicBeatState {
     var forceUpdateBounds = false;
 
     var focusTimer = 0;
+
+    var iTime = 0;
 
     function update(elapsed) {
         super.update(elapsed);
@@ -1874,9 +1849,9 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
-        for (i in members) {
-            //i.shader = i == selectedProp || i == selectedCharacter ? outlineShader : null;
-        }
+        iTime += elapsed;
+        outlineShader.setFloat('iTime', iTime);
+        
 
         /* if (selectedProp != null) {
             var point = new FlxPoint(FlxG.mouse.x, FlxG.mouse.y);
@@ -2147,6 +2122,8 @@ class StageEditorTheSecond extends MusicBeatState {
             camInteract.zoom = camGame.zoom;
             camInteract.visible = selectedProp != null;
         }
+
+        // return;
         
         if (selectedProp == null) return;
 
@@ -2178,16 +2155,6 @@ class StageEditorTheSecond extends MusicBeatState {
             tLC.alpha = FlxG.mouse.overlaps(tLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
         }
 
-        if (tLC != null) {
-            tLC.alpha = selectedProp != null ? tLC.alpha : 0.01;
-            
-            tLCi.alpha = tLC.alpha;
-            tLCi.scrollFactor = tLC.scrollFactor;
-            tLCi.scale = tLC.scale;
-            tLCi.x = tLC.x + (tLC.width/2) - (tLCi.width/2);
-            tLCi.y = tLC.y + (tLC.height/2) - (tLCi.height/2);
-        }
-
         if (selectedProp != null && tLC != null) {
             tMC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
             tMC.updateHitbox();
@@ -2213,16 +2180,6 @@ class StageEditorTheSecond extends MusicBeatState {
             tMC.alpha = FlxG.mouse.overlaps(tMC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
         }
 
-        if (tMC != null) {
-            tMC.alpha = selectedProp != null ? tMC.alpha : 0.01;
-            
-            tMCi.alpha = tMC.alpha;
-            tMCi.scrollFactor = tMC.scrollFactor;
-            tMCi.scale = tMC.scale;
-            tMCi.x = tMC.x + (tMC.width/2) - (tMCi.width/2);
-            tMCi.y = tMC.y + (tMC.height/2) - (tMCi.height/2);
-        }
-
         if (selectedProp != null && tLC != null) {
             mLC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
             mLC.updateHitbox();
@@ -2246,16 +2203,6 @@ class StageEditorTheSecond extends MusicBeatState {
             mLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2);
 
             mLC.alpha = FlxG.mouse.overlaps(mLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
-        }
-
-        if (mLC != null) {
-            mLC.alpha = selectedProp != null ? mLC.alpha : 0.01;
-            
-            mLCi.alpha = mLC.alpha;
-            mLCi.scrollFactor = mLC.scrollFactor;
-            mLCi.scale = mLC.scale;
-            mLCi.x = mLC.x + (mLC.width/2) - (mLCi.width/2);
-            mLCi.y = mLC.y + (mLC.height/2) - (mLCi.height/2);
         }
 
         if (selectedProp != null && tRC != null) {
@@ -2284,16 +2231,6 @@ class StageEditorTheSecond extends MusicBeatState {
             tRC.alpha = FlxG.mouse.overlaps(tRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
         }
 
-        if (tLC != null) {
-            tRC.alpha = selectedProp != null ? tRC.alpha : 0.01;
-            
-            tRCi.alpha = tRC.alpha;
-            tRCi.scrollFactor = tRC.scrollFactor;
-            tRCi.scale = tRC.scale;
-            tRCi.x = tRC.x + (tRC.width/2) - (tRCi.width/2);
-            tRCi.y = tRC.y + (tRC.height/2) - (tRCi.height/2);
-        }
-
         if (selectedProp != null && mRC != null) {
             mRC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
             mRC.updateHitbox();
@@ -2317,16 +2254,6 @@ class StageEditorTheSecond extends MusicBeatState {
             mRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2);
 
             mRC.alpha = FlxG.mouse.overlaps(mRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
-        }
-
-        if (mRC != null) {
-            mRC.alpha = selectedProp != null ? mRC.alpha : 0.01;
-            
-            mRCi.alpha = mRC.alpha;
-            mRCi.scrollFactor = mRC.scrollFactor;
-            mRCi.scale = mRC.scale;
-            mRCi.x = mRC.x + (mRC.width/2) - (mRCi.width/2);
-            mRCi.y = mRC.y + (mRC.height/2) - (mRCi.height/2);
         }
 
         if (selectedProp != null && bLC != null) {
@@ -2355,16 +2282,6 @@ class StageEditorTheSecond extends MusicBeatState {
             bLC.alpha = FlxG.mouse.overlaps(bLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
         }
 
-        if (bLC != null) {
-            bLC.alpha = selectedProp != null ? bLC.alpha : 0.01;
-            
-            bLCi.alpha = bLC.alpha;
-            bLCi.scrollFactor = bLC.scrollFactor;
-            bLCi.scale = bLC.scale;
-            bLCi.x = bLC.x + (bLC.width/2) - (bLCi.width/2);
-            bLCi.y = bLC.y + (bLC.height/2) - (bLCi.height/2);
-        }
-
         if (selectedProp != null && bMC != null) {
             bMC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
             bMC.updateHitbox();
@@ -2388,16 +2305,6 @@ class StageEditorTheSecond extends MusicBeatState {
             bMC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bMC.height/2) + (selectedProp.height);
 
             bMC.alpha = FlxG.mouse.overlaps(bMC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
-        }
-
-        if (bMC != null) {
-            bMC.alpha = selectedProp != null ? bMC.alpha : 0.01;
-            
-            bMCi.alpha = bMC.alpha;
-            bMCi.scrollFactor = bMC.scrollFactor;
-            bMCi.scale = bMC.scale;
-            bMCi.x = bMC.x + (bMC.width/2) - (bMCi.width/2);
-            bMCi.y = bMC.y + (bMC.height/2) - (bMCi.height/2);
         }
 
         if (selectedProp != null && bRC != null) {
@@ -2426,70 +2333,6 @@ class StageEditorTheSecond extends MusicBeatState {
             bRC.alpha = FlxG.mouse.overlaps(bRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
         }
 
-        if (bRC != null) {
-            bRC.alpha = selectedProp != null ? bRC.alpha : 0.01;
-            
-            bRCi.alpha = bRC.alpha;
-            bRCi.scrollFactor = bRC.scrollFactor;
-            bRCi.scale = bRC.scale;
-            bRCi.x = bRC.x + (bRC.width/2) - (bRCi.width/2);
-            bRCi.y = bRC.y + (bRC.height/2) - (bRCi.height/2);
-        }
-
-        if (tL != null) {
-            if (selectedProp != null) {
-                tL.visible = true;
-                tL.scrollFactor = selectedProp.scrollFactor;
-                tL.x = selectedProp.x + (selectedProp.width/2);
-                tL.y = selectedProp.y;
-                tL.scale.x = selectedProp.width;
-                tL.scale.y = 2 / camGame.zoom;               
-            } else {
-                tL.visible = false;
-            }
-        }
-
-        if (lL != null) {
-            if (selectedProp != null) {
-                lL.visible = true;
-                lL.scrollFactor = selectedProp.scrollFactor;
-                lL.x = selectedProp.x;
-                lL.y = selectedProp.y + (selectedProp.height/2);
-                lL.scale.x = 2 / camGame.zoom;
-                lL.scale.y = selectedProp.height;
-            } else {
-                lL.visible = false;
-            }
-        }
-
-        if (rL != null) {
-            if (selectedProp != null) {
-                rL.visible = true;
-                rL.scale.x = 2 / camGame.zoom;
-                rL.scale.y = selectedProp.height;
-                rL.updateHitbox();
-                rL.scrollFactor = selectedProp.scrollFactor;
-                rL.x = selectedProp.x + selectedProp.width;
-                rL.y = selectedProp.y;
-            } else {
-                rL.visible = false;
-            }
-        }
-
-        if (bL != null) {
-            if (selectedProp != null) {
-                bL.visible = true;
-                bL.scale.x = selectedProp.width;
-                bL.scale.y = 2 / camGame.zoom;
-                bL.updateHitbox();
-                bL.scrollFactor = selectedProp.scrollFactor;
-                bL.x = selectedProp.x;
-                bL.y = selectedProp.y + selectedProp.height;
-            } else {
-                bL.visible = false;
-            }
-        }
-
         if (cC != null) {
             
             if (selectedProp != null) {
@@ -2515,6 +2358,11 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
+
+        for (i in [tLC, tMC, tRC, mRC, bRC, bMC, bLC, mLC, cC]) {
+            i.scale.x *= 0.75;
+            i.scale.y *= 0.75;
+        }
 
         if (selectedProp == null) return;
         getPropData(selectedProp.name).scale = Either.Right([Math.round(selectedProp.scale.x*100)/100, Math.round(selectedProp.scale.y*100)/100]);
@@ -2810,7 +2658,8 @@ class StageEditorTheSecond extends MusicBeatState {
     }
 
     function getCornerCircle(outer:Bool) {
-        var theCircle = new FlxShapeCircle(0, 0, outer ? 15 : 10, {
+        var theCircle = FunkinSprite.create(0, 0, 'circle');
+        /* var theCircle = new FlxShapeCircle(0, 0, outer ? 15 : 10, {
             thickness: 3,
             color: outer ? 0xFFbbe3e9 : FlxColor.TRANSPARENT,
             pixelHinting: false,
@@ -2818,7 +2667,7 @@ class StageEditorTheSecond extends MusicBeatState {
             capsStyle: null,
             jointStyle: null,
             miterLimit: 200
-        }, outer ? FlxColor.TRANSPARENT : 0xFFf7a7a7);
+        }, outer ? FlxColor.TRANSPARENT : 0xFFf7a7a7); */
         theCircle.antialiasing = true;
         //add(outerRing);
         //theCircle.add(outerRing);
