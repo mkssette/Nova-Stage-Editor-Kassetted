@@ -142,23 +142,15 @@ class StageEditorTheSecond extends MusicBeatState {
 
     // -- Edge Cs -- \\
     var tLC;
-    var tLCi;
     var tMC;
-    var tMCi;
     var tRC;
-    var tRCi;
 
     var mLC;
-    var mLCi;
     var mRC;
-    var mRCi;
     
     var bLC;
-    var bLCi;
     var bMC;
-    var bMCi;
     var bRC;
-    var bRCi;
 
     // --  Other -- \\
     var cC;
