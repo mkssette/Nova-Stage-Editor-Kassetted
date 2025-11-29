@@ -109,11 +109,15 @@ import funkin.modding.base.ScriptedMusicBeatState;
 
 import funkin.save.Save;
 
+import funkin.api.discord.DiscordClient;
+
 using StringTools;
 
 class StageEditorTheSecond extends MusicBeatState {
 
     var np = [];
+
+    var discStageName;
 
     var save = {
 		bind: (string1, string2)->{},
@@ -377,6 +381,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 key: "chartEditorLoop"
             }
         }
+        
 		FunkinSound.playMusic(save.data.editorSong.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 		FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
 
@@ -486,6 +491,7 @@ class StageEditorTheSecond extends MusicBeatState {
             cancelButton.onClick = ()->{
                 cancelInput = false;
                 newStageDialog.hide();
+                newStageDialog.destroy();
             }
         }
         bind(saveStageAsButton, MouseEvent.CLICK, saveStageAsCallback);
@@ -509,6 +515,7 @@ class StageEditorTheSecond extends MusicBeatState {
             cancelButton.onClick = ()->{
                 cancelInput = false;
                 newStageDialog.hide();
+                newStageDialog.destroy();
             }
 
             var continueButton = newStageDialog.findComponent("dialogContinue");
@@ -558,6 +565,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
                     cancelInput = false;
                     newStageDialog.hide();
+                    newStageDialog.destroy();
                 }
             }
 
@@ -607,6 +615,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 deleteStageDialog.findComponent("dialogContinue").onClick = ()->{
                     cancelInput = false;
                     deleteStageDialog.hide();
+                    deleteStageDialog.destroy();
                     deleteStageCallback();
                 }
     
@@ -614,6 +623,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 deleteStageDialog.findComponent("dialogCancel").onClick = ()->{
                     cancelInput = false;
                     deleteStageDialog.hide();
+                    deleteStageDialog.destroy();
                 }
             }
 
@@ -1706,7 +1716,6 @@ class StageEditorTheSecond extends MusicBeatState {
         menuBar.findComponent("viewFromSpectator").onClick = viewFromSpectatorCallback;
         newKeybind(["TWO"], viewFromSpectatorCallback, "justPressed");
 
-
         lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
         lL.cameras = [camInteract];
         add(lL);
@@ -1769,6 +1778,12 @@ class StageEditorTheSecond extends MusicBeatState {
             trace(i.scale);
         }
         currentStage.refresh();
+
+        DiscordClient.setPresence({
+            details: editorTitle + " v" + editorVersion,
+            state: 'Editing a Stage: ' + currentStage.stageName,
+        });
+
     }
 
     var targetSpriteY = 0;
@@ -1786,7 +1801,13 @@ class StageEditorTheSecond extends MusicBeatState {
 
     function update(elapsed) {
         super.update(elapsed);
-        
+
+        if (FlxG.mouse.justPressed && rightClickMenu != null && !FlxG.mouse.overlaps(rightClickMenu))
+		{
+			rightClickMenu.destroy();
+			rightClickMenu = null;
+		}
+
         if (focusTimer > 0) {
             focusTimer--;
             return;
@@ -1941,7 +1962,6 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
         
-
         var npIndex = 0;
         for (negativePositive in np) {
             negativePositive.x = 0;
@@ -2024,12 +2044,8 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
-
-
-
         forceUpdateBounds = false;
  
-        
         if (selectedProp != null /* && FlxG.mouse.pressed */ && !cancelInput) {
             for (i in currentStage._data.props) {
                 if (i.name == selectedProp.name) {
@@ -2065,6 +2081,11 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         if (FlxG.mouse.justPressedRight && selectedProp != null && FlxG.mouse.overlaps(selectedProp, camGame)) {
+            if (rightClickMenu != null)
+			{
+				rightClickMenu.destroy();
+				rightClickMenu = null;
+			}
             rightClickMenu = RuntimeComponentBuilder.build(Paths.ui("stage-editor/rightClick/prop"));
             rightClickMenu.x = FlxG.mouse.x;
             rightClickMenu.y = FlxG.mouse.y;
