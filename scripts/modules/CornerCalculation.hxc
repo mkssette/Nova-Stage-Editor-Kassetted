@@ -19,7 +19,7 @@ class CornerCalculation {
         props.bottomLeftCorner.y = sprite.y + sprite.height;
         props.bottomRightCorner.x = sprite.x + sprite.width;
         props.bottomRightCorner.y = sprite.y + sprite.height;
-
+        
         //trace(props);
         return props;
     }
@@ -27,10 +27,10 @@ class CornerCalculation {
 }
 
 class CornerProperties extends Module {
-    var topLeftCorner:FlxPoint = new FlxPoint(0, 0);
-    var topRightCorner:FlxPoint = new FlxPoint(0, 0);
-    var bottomLeftCorner:FlxPoint = new FlxPoint(0, 0);
-    var bottomRightCorner:FlxPoint = new FlxPoint(0, 0);
+    var topLeftCorner = {x: 0, y: 0};
+    var topRightCorner = {x: 0, y: 0};
+    var bottomLeftCorner = {x: 0, y: 0};
+    var bottomRightCorner = {x: 0, y: 0};
 
     public static function new() {
         super("CornerProperties");
