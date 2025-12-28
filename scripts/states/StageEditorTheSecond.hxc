@@ -16,6 +16,8 @@ import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
 import haxe.ui.core.TextDisplay;
 
+import flixel.util.FlxDestroyUtil;
+
 import haxe.ui.components.Label;
 import haxe.ui.components.Button;
 import haxe.ui.components.TabBar;
@@ -118,6 +120,10 @@ class StageEditorTheSecond extends MusicBeatState {
     var np = [];
 
     var discStageName;
+
+    var editorSongSave;
+    var precacheCharsSave;
+    var precacheStagesSave;
 
     var save = {
 		bind: (string1, string2)->{},
@@ -372,20 +378,47 @@ class StageEditorTheSecond extends MusicBeatState {
     function create() {
         super.create();
         Cursor.show();
+
+        var style = RuntimeComponentBuilder.build(Paths.ui("stage-editor/styles/main"));
+        add(style);
+
         // outlineShader.scriptCall('setThickness', [10]);
 
-        save.bind("nova-editors", "NebulaStellaNova");
+        // SaveUtil.deleteSave('nova-editors'); // For testing purposes
+
+        SaveUtil.createSave('nova-editors');
+
+        /* save.bind("nova-editors", "NebulaStellaNova");
         if (save.data.editorSong == null) {
             save.data.editorSong = {
                 title: "Artistic Expression",
                 key: "chartEditorLoop"
             }
+        } */
+
+        if (SaveUtil.getFromSave('nova-editors', 'editorSong') == null) {
+            SaveUtil.writeToSave('nova-editors', 'editorSong', {
+                title: "Artistic Expression",
+                key: "chartEditorLoop"
+            });
         }
 
-		FunkinSound.playMusic(save.data.editorSong.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+        if (SaveUtil.getFromSave('nova-editors', 'precacheChars') == null) {
+            SaveUtil.writeToSave('nova-editors', 'precacheChars', true);
+        }
+
+        if (SaveUtil.getFromSave('nova-editors', 'precacheStages') == null) {
+            SaveUtil.writeToSave('nova-editors', 'precacheStages', true);
+        }
+
+        editorSongSave = SaveUtil.getFromSave('nova-editors', 'editorSong');
+        precacheCharsSave = SaveUtil.getFromSave('nova-editors', 'precacheChars');
+        precacheStagesSave = SaveUtil.getFromSave('nova-editors', 'precacheStages');
+
+		FunkinSound.playMusic(editorSongSave.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 		FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
 
-		var chartEditor = new ChartEditorState();
+		// var chartEditor = new ChartEditorState();
 
         camBackground = new FlxCamera();
         camBackground.bgColor = 0xFF000000;
@@ -418,7 +451,7 @@ class StageEditorTheSecond extends MusicBeatState {
         var idList = [];
         for (i in CharacterDataParser.characterCache.keys()) {
             nameList.push(CharacterDataParser.characterCache.get(i).name);
-            if (save.data.precacheChars) {
+            if (precacheCharsSave) {
                 var c = CharacterDataParser.characterCache.get(i);
                 var assetsToLoad = [];
                 assetsToLoad.push(c.assetPath);
@@ -462,14 +495,20 @@ class StageEditorTheSecond extends MusicBeatState {
         bind(resetCamera, MouseEvent.CLICK, resetCameraCallback);
         newKeybind(["CONTROL", "SHIFT", "R"], resetCameraCallback);
 
-        menuBar.findComponent("precacheCharacters").selected = save.data.precacheChars;
+        
+        trace(precacheCharsSave);
+        trace(precacheStagesSave);
+
+        menuBar.findComponent("precacheCharacters").selected = precacheCharsSave;
         menuBar.findComponent("precacheCharacters").onChange = ()->{
-            save.data.precacheChars = menuBar.findComponent("precacheCharacters").selected;
+            trace("Precache Characters: " + precacheCharsSave);
+            precacheCharsSave = menuBar.findComponent("precacheCharacters").selected;
         }
 
-        menuBar.findComponent("precacheStages").selected = save.data.precacheStages;
+        menuBar.findComponent("precacheStages").selected = precacheStagesSave;
         menuBar.findComponent("precacheStages").onChange = ()->{
-            save.data.precacheStages = menuBar.findComponent("precacheStages").selected;
+            trace("Precache Stages: " + precacheStagesSave);
+            precacheStagesSave = menuBar.findComponent("precacheStages").selected;
         }
 
         add(menuBar);
@@ -491,7 +530,8 @@ class StageEditorTheSecond extends MusicBeatState {
             cancelButton.onClick = ()->{
                 cancelInput = false;
                 newStageDialog.hide();
-                newStageDialog.destroy();
+                // ADD THIS:
+                newStageDialog = FlxDestroyUtil.destroy(newStageDialog);
             }
         }
         bind(saveStageAsButton, MouseEvent.CLICK, saveStageAsCallback);
@@ -515,7 +555,8 @@ class StageEditorTheSecond extends MusicBeatState {
             cancelButton.onClick = ()->{
                 cancelInput = false;
                 newStageDialog.hide();
-                newStageDialog.destroy();
+                // ADD THIS:
+                newStageDialog = FlxDestroyUtil.destroy(newStageDialog);
             }
 
             var continueButton = newStageDialog.findComponent("dialogContinue");
@@ -565,7 +606,8 @@ class StageEditorTheSecond extends MusicBeatState {
 
                     cancelInput = false;
                     newStageDialog.hide();
-                    newStageDialog.destroy();
+                    // ADD THIS:
+                    newStageDialog = FlxDestroyUtil.destroy(newStageDialog);
                 }
             }
 
@@ -765,6 +807,13 @@ class StageEditorTheSecond extends MusicBeatState {
                 newNotification("Error!", "Please Select a Prop First.", NotificationType.Error);
             } else {
                 cancelInput = true;
+
+                /* if (editPropWindow != null) {
+                    windowManager.removeWindow(editPropWindow);
+                    editPropWindow.destroy();
+                    editPropWindow = null;
+                } */
+
                 var propData = getSelectedPropData();
                 // trace(propData);
 
@@ -1584,10 +1633,12 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
                 musicMenu.dataSource.add({text: name, id: file});
                 musicMenu.onChange = ()->{
-                    save.data.editorSong = {
+                    
+                    SaveUtil.writeToSave('nova-editors', 'editorSong', {
                         title: musicMenu.selectedItem.text,
                         key: musicMenu.selectedItem.id
-                    }
+                    });
+
                     FunkinSound.playMusic(musicMenu.selectedItem.id, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 
                     // FlxG.sound.music.fadeIn(0.5, 0, 1);
@@ -1770,13 +1821,27 @@ class StageEditorTheSecond extends MusicBeatState {
     }
 
     function reloadStage() {
-        for (i in currentStage.members) {
-            currentStage.remove(i, false);
+        var i = currentStage.members.length - 1;
+        while (i >= 0) {
+            var member = currentStage.members[i];
+            if (member != null) {
+                if (member == player || member == opponent || member == spectator) {
+                    currentStage.remove(member, true);
+                } else {
+                    member.destroy(); 
+                    currentStage.remove(member, true);
+                }
+            }
+            i--;
         }
+
         currentStage.buildStage();
+        
+        // Debugging print
         for (i in currentStage._data.props) {
             trace(i.scale);
         }
+        
         currentStage.refresh();
 
         DiscordClient.setPresence({
@@ -1845,6 +1910,11 @@ class StageEditorTheSecond extends MusicBeatState {
 
             if (history.length == 0)
                 history.push(data);
+
+            if (history.length > 50) {
+                history.shift();
+            }
+
         }
 
         if (FlxG.keys.pressed.CONTROL && FlxG.keys.justPressed.Y) redoCallback();
@@ -2121,15 +2191,48 @@ class StageEditorTheSecond extends MusicBeatState {
         return FlxG.mouse.overlaps(tLC, camGame) || FlxG.mouse.overlaps(tMC, camGame) || FlxG.mouse.overlaps(tRC, camGame) || FlxG.mouse.overlaps(mRC, camGame) || FlxG.mouse.overlaps(bRC, camGame) || FlxG.mouse.overlaps(bMC, camGame) || FlxG.mouse.overlaps(bLC, camGame) || FlxG.mouse.overlaps(mLC, camGame);
     }
 
+    // Helper function moved out of the update loop to prevent memory leaks
+    function updateTransformHandle(sprite:FunkinSprite, x:Float, y:Float, mouseDeltaX:Float, mouseDeltaY:Float, invZoom:Float, isSmall:Bool = false) {
+        if (sprite == null) return;
+        
+        var s = isSmall ? (0.9 * invZoom) : invZoom;
+        
+        // Only update properties if they actually changed to save processing
+        if (sprite.scale.x != s || sprite.scale.y != s) {
+            sprite.scale.set(s, s);
+            sprite.updateHitbox();
+        }
+
+        // Only update scroll factor if changed
+        if (selectedProp != null && (sprite.scrollFactor.x != selectedProp.scrollFactor.x || sprite.scrollFactor.y != selectedProp.scrollFactor.y)) {
+             sprite.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
+        }
+
+        sprite.x = x; 
+        sprite.y = y;
+
+        // Visual updates
+        var isOverlapping = FlxG.mouse.overlaps(sprite, camGame);
+        sprite.alpha = isOverlapping ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+
+        // Drag visual logic (Actual movement logic remains in the main loop, this just handles the sprite visual)
+        if (FlxG.mouse.pressed && isOverlapping) {
+             sprite.x += mouseDeltaX;
+             sprite.y += mouseDeltaY;
+        }
+    }
+
     var previous = "something";
     function updateTransformTool() {
+        // Optimization: Reset previous prop reference to ensure clean state switches
         var skip = false;
         if (previous != selectedProp) {
             previous = selectedProp;
             skip = true;
         }
         if (previous == null && !skip) return;
-        // if (FlxG.keys.pressed.Q || FlxG.keys.pressed.E) return;
+        
+        // Camera Sync
         if (camInteract != null) {
             camInteract.scroll.x = camGame.scroll.x;
             camInteract.scroll.y = camGame.scroll.y;
@@ -2137,249 +2240,121 @@ class StageEditorTheSecond extends MusicBeatState {
             camInteract.visible = selectedProp != null;
         }
 
-        // return;
-
         if (selectedProp == null) return;
 
-        var selectedObj = selectedProp != null ? selectedProp : (selectedCharacter != null ? selectedCharacter : null);
+        // --- OPTIMIZATION: Calculate math once per frame ---
+        // IMPORTANT: Ensure CornerCalculation does not create new FlxPoints internally without pooling!
+        // If CornerCalculation returns new objects every frame, that is a separate leak source.
+        var propCorners = CornerCalculation.calculate(selectedProp);
+        
+        var invZoom = 1 / camGame.zoom; 
+        var mouseX = FlxG.mouse.x;
+        var mouseY = FlxG.mouse.y;
+        var mouseDeltaX = FlxG.mouse.deltaX / camGame.zoom;
+        var mouseDeltaY = FlxG.mouse.deltaY / camGame.zoom;
 
-        if (selectedProp != null && tLC != null) {
-            tLC.scale.set(1/camGame.zoom, 1/camGame.zoom);
-            tLC.updateHitbox();
-            tLC.scrollFactor.x = selectedProp.scrollFactor.x;
-            tLC.scrollFactor.y = selectedProp.scrollFactor.y;
-            tLC.x += FlxG.mouse.deltaX / camGame.zoom;
-            tLC.y += FlxG.mouse.deltaY / camGame.zoom;
+        // --- Logic Blocks ---
+
+        if (tLC != null) {
             if (FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.x -= (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y -= (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
-                if (selectedProp.scale.x < 0.1) {
-                    selectedProp.scale.x = 0.1;
-                }
-                if (selectedProp.scale.y < 0.1) {
-                    selectedProp.scale.y = 0.1;
-                }
+                selectedProp.x += mouseDeltaX;
+                selectedProp.y += mouseDeltaY;
+                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
             }
-            tLC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (tLC.width/2);
-            tLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (tLC.height/2);
-
-            tLC.alpha = FlxG.mouse.overlaps(tLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(tLC, propCorners.topLeftCorner.x - (tLC.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
         }
 
-        if (selectedProp != null && tLC != null) {
-            tMC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
-            tMC.updateHitbox();
-            tMC.scrollFactor.x = selectedProp.scrollFactor.x;
-            tMC.scrollFactor.y = selectedProp.scrollFactor.y;
-            tMC.x += FlxG.mouse.deltaX / camGame.zoom;
-            tMC.y += FlxG.mouse.deltaY / camGame.zoom;
-            if (FlxG.mouse.justPressed) {
-                mouseLock.x = FlxG.mouse.x;
-            }
+        if (tMC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.x = mouseX;
             if (FlxG.mouse.overlaps(tMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.y -= (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
-                FlxG.mouse.x = mouseLock.x;
-                if (selectedProp.scale.y < 0.1) {
-                    selectedProp.scale.y = 0.1;
-                }
+                selectedProp.y += mouseDeltaY;
+                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+                FlxG.mouse.x = Std.int(mouseLock.x); 
             }
-            tMC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (tLC.width/2) + (selectedProp.width/2);
-            tMC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (tLC.height/2);
-
-            tMC.alpha = FlxG.mouse.overlaps(tMC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(tMC, propCorners.topLeftCorner.x - (tLC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
         }
 
-        if (selectedProp != null && tLC != null) {
-            mLC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
-            mLC.updateHitbox();
-            mLC.scrollFactor.x = selectedProp.scrollFactor.x;
-            mLC.scrollFactor.y = selectedProp.scrollFactor.y;
-            mLC.x += FlxG.mouse.deltaX / camGame.zoom;
-            mLC.y += FlxG.mouse.deltaY / camGame.zoom;
-            if (FlxG.mouse.justPressed) {
-                mouseLock.y = FlxG.mouse.y;
-            }
+        if (mLC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.y = mouseY;
             if (FlxG.mouse.overlaps(mLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.x -= (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
-                FlxG.mouse.y = mouseLock.y;
-                if (selectedProp.scale.x < 0.1) {
-                    selectedProp.scale.x = 0.1;
-                }
+                selectedProp.x += mouseDeltaX;
+                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                FlxG.mouse.y = Std.int(mouseLock.y);
             }
-            mLC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (mLC.width/2);
-            mLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2);
-
-            mLC.alpha = FlxG.mouse.overlaps(mLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(mLC, propCorners.topLeftCorner.x - (mLC.width/2), propCorners.topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
         }
 
-        if (selectedProp != null && tRC != null) {
-            tRC.scale.set(1/camGame.zoom, 1/camGame.zoom);
-            tRC.updateHitbox();
-            tRC.scrollFactor.x = selectedProp.scrollFactor.x;
-            tRC.scrollFactor.y = selectedProp.scrollFactor.y;
-            tRC.x += FlxG.mouse.deltaX / camGame.zoom;
-            tRC.y += FlxG.mouse.deltaY / camGame.zoom;
+        if (tRC != null) {
             if (FlxG.mouse.overlaps(tRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                // selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.x += (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y -= (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
-                if (selectedProp.scale.x < 0.1) {
-                    selectedProp.scale.x = 0.1;
-                }
-                if (selectedProp.scale.y < 0.1) {
-                    selectedProp.scale.y = 0.1;
-                }
+                selectedProp.y += mouseDeltaY;
+                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
             }
-            tRC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (tRC.width/2) + selectedProp.width;
-            tRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (tRC.height/2);
-
-            tRC.alpha = FlxG.mouse.overlaps(tRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(tRC, propCorners.topLeftCorner.x - (tRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (tRC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
         }
 
-        if (selectedProp != null && mRC != null) {
-            mRC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
-            mRC.updateHitbox();
-            mRC.scrollFactor.x = selectedProp.scrollFactor.x;
-            mRC.scrollFactor.y = selectedProp.scrollFactor.y;
-            mRC.x += FlxG.mouse.deltaX / camGame.zoom;
-            mRC.y += FlxG.mouse.deltaY / camGame.zoom;
-            if (FlxG.mouse.justPressed) {
-                mouseLock.y = FlxG.mouse.y;
-            }
+        if (mRC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.y = mouseY;
             if (FlxG.mouse.overlaps(mRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                //selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.x += (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
-                FlxG.mouse.y = mouseLock.y;
-                if (selectedProp.scale.x < 0.1) {
-                    selectedProp.scale.x = 0.1;
-                }
+                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                FlxG.mouse.y = Std.int(mouseLock.y);
             }
-            mRC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (mRC.width/2) + (selectedProp.width);
-            mRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2);
-
-            mRC.alpha = FlxG.mouse.overlaps(mRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(mRC, propCorners.topLeftCorner.x - (mRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
         }
 
-        if (selectedProp != null && bLC != null) {
-            bLC.scale.set(1/camGame.zoom, 1/camGame.zoom);
-            bLC.updateHitbox();
-            bLC.scrollFactor.x = selectedProp.scrollFactor.x;
-            bLC.scrollFactor.y = selectedProp.scrollFactor.y;
-            bLC.x += FlxG.mouse.deltaX / camGame.zoom;
-            bLC.y += FlxG.mouse.deltaY / camGame.zoom;
+        if (bLC != null) {
             if (FlxG.mouse.overlaps(bLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                //selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.x -= (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y += (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
-                if (selectedProp.scale.x < 0.1) {
-                    selectedProp.scale.x = 0.1;
-                }
-                if (selectedProp.scale.y < 0.1) {
-                    selectedProp.scale.y = 0.1;
-                }
+                selectedProp.x += mouseDeltaX;
+                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
             }
-            bLC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (bLC.width/2);
-            bLC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bLC.height/2) + selectedProp.height;
-
-            bLC.alpha = FlxG.mouse.overlaps(bLC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(bLC, propCorners.topLeftCorner.x - (bLC.width/2), propCorners.topLeftCorner.y - (bLC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
         }
 
-        if (selectedProp != null && bMC != null) {
-            bMC.scale.set(0.9/camGame.zoom, 0.9/camGame.zoom);
-            bMC.updateHitbox();
-            bMC.scrollFactor.x = selectedProp.scrollFactor.x;
-            bMC.scrollFactor.y = selectedProp.scrollFactor.y;
-            bMC.x += FlxG.mouse.deltaX / camGame.zoom;
-            bMC.y += FlxG.mouse.deltaY / camGame.zoom;
-            if (FlxG.mouse.justPressed) {
-                mouseLock.x = FlxG.mouse.x;
-            }
+        if (bMC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.x = mouseX;
             if (FlxG.mouse.overlaps(bMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                // selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.y += (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
-                FlxG.mouse.x = mouseLock.x;
-                if (selectedProp.scale.y < 0.1) {
-                    selectedProp.scale.y = 0.1;
-                }
+                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+                FlxG.mouse.x = Std.int(mouseLock.x);
             }
-            bMC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (bMC.width/2) + (selectedProp.width/2);
-            bMC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bMC.height/2) + (selectedProp.height);
-
-            bMC.alpha = FlxG.mouse.overlaps(bMC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(bMC, propCorners.topLeftCorner.x - (bMC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (bMC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom, true);
         }
 
-        if (selectedProp != null && bRC != null) {
-            bRC.scale.set(1/camGame.zoom, 1/camGame.zoom);
-            bRC.updateHitbox();
-            bRC.scrollFactor.x = selectedProp.scrollFactor.x;
-            bRC.scrollFactor.y = selectedProp.scrollFactor.y;
-            bRC.x += FlxG.mouse.deltaX / camGame.zoom;
-            bRC.y += FlxG.mouse.deltaY / camGame.zoom;
+        if (bRC != null) {
             if (FlxG.mouse.overlaps(bRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                // selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                //selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-                selectedProp.updateHitbox();
-                selectedProp.scale.x += (FlxG.mouse.deltaX / camGame.zoom)/(selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y += (FlxG.mouse.deltaY / camGame.zoom)/(selectedProp.height / selectedProp.scale.y);
-                if (selectedProp.scale.x < 0.1) {
-                    selectedProp.scale.x = 0.1;
-                }
-                if (selectedProp.scale.y < 0.1) {
-                    selectedProp.scale.y = 0.1;
-                }
+                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
             }
-            bRC.x = CornerCalculation.calculate(selectedProp).topLeftCorner.x - (bRC.width/2) + selectedProp.width;
-            bRC.y = CornerCalculation.calculate(selectedProp).topLeftCorner.y - (bRC.height/2) + selectedProp.height;
-
-            bRC.alpha = FlxG.mouse.overlaps(bRC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            updateTransformHandle(bRC, propCorners.topLeftCorner.x - (bRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (bRC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
         }
+
+        // Safety Clamps
+        if (selectedProp.scale.x < 0.1) selectedProp.scale.x = 0.1;
+        if (selectedProp.scale.y < 0.1) selectedProp.scale.y = 0.1;
 
         if (cC != null) {
-
             if (selectedProp != null) {
-                cC.scale.set(0.8/camGame.zoom, 0.8/camGame.zoom);
-                cC.updateHitbox();
-                cC.scrollFactor.x = selectedProp.scrollFactor.x;
-                cC.scrollFactor.y = selectedProp.scrollFactor.y;
-                cC.x += FlxG.mouse.deltaX / camGame.zoom;
-                cC.y += FlxG.mouse.deltaY / camGame.zoom;
+                var cScale = 0.8 * invZoom;
+                if(cC.scale.x != cScale) {
+                    cC.scale.set(cScale, cScale);
+                    cC.updateHitbox();
+                }
+                cC.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
 
                 if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed) {
-                    selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-                    selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
+                    selectedProp.x += mouseDeltaX;
+                    selectedProp.y += mouseDeltaY;
                 }
-
                 cC.x = selectedProp.x + (selectedProp.width/2) - (cC.width/2);
                 cC.y = selectedProp.y + (selectedProp.height/2) - (cC.height/2);
-
-
                 cC.alpha = FlxG.mouse.overlaps(cC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
             } else {
                 cC.alpha = 0.01;
             }
         }
-
-
-        for (i in [tLC, tMC, tRC, mRC, bRC, bMC, bLC, mLC, cC]) {
-            i.scale.x *= 0.75;
-            i.scale.y *= 0.75;
-        }
-
-        if (selectedProp == null) return;
-        getPropData(selectedProp.name).scale = Either.Right([Math.round(selectedProp.scale.x*100)/100, Math.round(selectedProp.scale.y*100)/100]);
+        
+        selectedProp.updateHitbox();
     }
 
     function refreshPropList() {
@@ -2437,7 +2412,7 @@ class StageEditorTheSecond extends MusicBeatState {
     function destroy() {
         super.destroy();
         Cursor.hide();
-        Save.writeToAvailableSlot('nova-editors', save.data);
+        // Save.vailableSlot('nova-editors', save.data);
     }
 
     public function test() {
@@ -2641,7 +2616,7 @@ class StageEditorTheSecond extends MusicBeatState {
         for (i in stageRegistry.entries.keys()) {
             if (!blacklist.contains(stageRegistry.entries.get(i).stageName)) {
                 var data = new Stage(i);
-                if (save.data.precacheStages)
+                if (precacheStagesSave)
                     data.onCreate();
                 customStageRegistry.set(i, data._data);
                 stageList.dataSource.add({ text: stageRegistry.entries.get(i).stageName, id: i });
