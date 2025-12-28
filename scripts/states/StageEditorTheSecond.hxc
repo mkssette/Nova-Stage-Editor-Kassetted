@@ -16,8 +16,6 @@ import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
 import haxe.ui.core.TextDisplay;
 
-import flixel.util.FlxDestroyUtil;
-
 import haxe.ui.components.Label;
 import haxe.ui.components.Button;
 import haxe.ui.components.TabBar;
@@ -124,15 +122,6 @@ class StageEditorTheSecond extends MusicBeatState {
     var editorSongSave;
     var precacheCharsSave;
     var precacheStagesSave;
-
-    var save = {
-		bind: (string1, string2)->{},
-		data: Save.fetchFromSlotRaw('nova-editors') ?? {
-			editorSong: null,
-            precacheChars: true,
-            precacheStages: true
-		}
-	};
 
     var history = [];
     var redoHistory = [];
@@ -384,17 +373,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         // outlineShader.scriptCall('setThickness', [10]);
 
-        // SaveUtil.deleteSave('nova-editors'); // For testing purposes
-
         SaveUtil.createSave('nova-editors');
-
-        /* save.bind("nova-editors", "NebulaStellaNova");
-        if (save.data.editorSong == null) {
-            save.data.editorSong = {
-                title: "Artistic Expression",
-                key: "chartEditorLoop"
-            }
-        } */
 
         if (SaveUtil.getFromSave('nova-editors', 'editorSong') == null) {
             SaveUtil.writeToSave('nova-editors', 'editorSong', {
@@ -516,7 +495,6 @@ class StageEditorTheSecond extends MusicBeatState {
         var saveStageAsButton = menuBar.findComponent("saveStageAs");
         var saveStageAsCallback = ()->{
             var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/saveAsDialog"));
-            // add(newStageDialog);
             newStageDialog.screenCenter();
             newStageDialog.showDialog(true);
             cancelInput = true;
@@ -530,8 +508,7 @@ class StageEditorTheSecond extends MusicBeatState {
             cancelButton.onClick = ()->{
                 cancelInput = false;
                 newStageDialog.hide();
-                // ADD THIS:
-                newStageDialog = FlxDestroyUtil.destroy(newStageDialog);
+                newStageDialog.destroy();
             }
         }
         bind(saveStageAsButton, MouseEvent.CLICK, saveStageAsCallback);
@@ -541,7 +518,6 @@ class StageEditorTheSecond extends MusicBeatState {
         var newStageCallback = ()->{
 
             var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/newStageDialog"));
-            // add(newStageDialog);
             newStageDialog.screenCenter();
             newStageDialog.showDialog(true);
             cancelInput = true;
@@ -555,8 +531,7 @@ class StageEditorTheSecond extends MusicBeatState {
             cancelButton.onClick = ()->{
                 cancelInput = false;
                 newStageDialog.hide();
-                // ADD THIS:
-                newStageDialog = FlxDestroyUtil.destroy(newStageDialog);
+                newStageDialog.destroy();
             }
 
             var continueButton = newStageDialog.findComponent("dialogContinue");
@@ -606,11 +581,9 @@ class StageEditorTheSecond extends MusicBeatState {
 
                     cancelInput = false;
                     newStageDialog.hide();
-                    // ADD THIS:
-                    newStageDialog = FlxDestroyUtil.destroy(newStageDialog);
+                    newStageDialog.destroy();   
                 }
             }
-
             trace("yo");
         }
         bind(newStageButton, MouseEvent.CLICK, newStageCallback);
