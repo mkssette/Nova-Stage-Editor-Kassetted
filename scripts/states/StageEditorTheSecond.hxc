@@ -111,6 +111,8 @@ import funkin.save.Save;
 
 import funkin.api.discord.DiscordClient;
 
+import haxe.ui.Toolkit;
+
 using StringTools;
 
 class StageEditorTheSecond extends MusicBeatState {
@@ -371,7 +373,9 @@ class StageEditorTheSecond extends MusicBeatState {
         var style = RuntimeComponentBuilder.build(Paths.ui("stage-editor/styles/main"));
         add(style);
 
-        // outlineShader.scriptCall('setThickness', [10]);
+        
+
+        
 
         SaveUtil.createSave('nova-editors');
 
@@ -395,9 +399,9 @@ class StageEditorTheSecond extends MusicBeatState {
         precacheStagesSave = SaveUtil.getFromSave('nova-editors', 'precacheStages');
 
 		FunkinSound.playMusic(editorSongSave.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
-		FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
+		FlxG.sound.music.fadeIn(0.5 , 0, 1);
 
-		// var chartEditor = new ChartEditorState();
+		
 
         camBackground = new FlxCamera();
         camBackground.bgColor = 0xFF000000;
@@ -463,9 +467,7 @@ class StageEditorTheSecond extends MusicBeatState {
         menuBar = RuntimeComponentBuilder.build(Paths.ui("stage-editor/menubar"));
         menuBar.findComponent("menuBarTitle").text = editorTitle + " v" + editorVersion;
 
-        /* menuBar.findComponent("undo").onClick = ()->{
-            undoCallback();
-        } */
+        
 
         var resetCamera = menuBar.findComponent("resetCamera");
 
@@ -480,14 +482,16 @@ class StageEditorTheSecond extends MusicBeatState {
 
         menuBar.findComponent("precacheCharacters").selected = precacheCharsSave;
         menuBar.findComponent("precacheCharacters").onChange = ()->{
-            trace("Precache Characters: " + precacheCharsSave);
             precacheCharsSave = menuBar.findComponent("precacheCharacters").selected;
+            SaveUtil.writeToSave('nova-editors', 'precacheChars', precacheCharsSave);
+            trace("Precache Characters: " + precacheCharsSave);
         }
 
         menuBar.findComponent("precacheStages").selected = precacheStagesSave;
         menuBar.findComponent("precacheStages").onChange = ()->{
-            trace("Precache Stages: " + precacheStagesSave);
             precacheStagesSave = menuBar.findComponent("precacheStages").selected;
+            SaveUtil.writeToSave('nova-editors', 'precacheStages', precacheStagesSave);
+            trace("Precache Stages: " + precacheStagesSave);
         }
 
         add(menuBar);
@@ -621,7 +625,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 deleteStageCallback();
             } else {
                 var deleteStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/deleteStageDialog"));
-                // add(deleteStageDialog);
+                
                 deleteStageDialog.screenCenter();
                 deleteStageDialog.showDialog(true);
                 cancelInput = true;
@@ -654,13 +658,12 @@ class StageEditorTheSecond extends MusicBeatState {
         newKeybind(["CONTROL", "Q"], exit);
 
         saveAsComponent = menuBar.findComponent("saveStageAs");
-        //bind(saveAsComponent, MouseEvent.CLICK, test);
+        
 
         var saveStageComponent = menuBar.findComponent("saveStage");
         var saveStageCallback = ()->{
             if (FlxG.keys.pressed.SHIFT) return;
-            /* trace(stringed);
-            trace(currentStage.id); */
+            
             if (currentStage.id == "mainStage") {
                 newNotification("Error!", 'Could not save stage!\n"assets" folder is protected.', NotificationType.Error, 5000);
                 return;
@@ -681,7 +684,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
             }
         }
-        //saveStageComponent.onClick = saveStageCallback;
+        
         bind(saveStageComponent, MouseEvent.CLICK, saveStageCallback);
         newKeybind(["CONTROL", "S"], saveStageCallback);
         newKeybind(["CONTROL", "R"], ()->{
@@ -691,7 +694,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         });
 
-        // nwords <3
+        
 
         var userGuideCallback = ()->{
             if (cancelInput) return;
@@ -766,12 +769,12 @@ class StageEditorTheSecond extends MusicBeatState {
             reloadStage();
             resetChars();
 
-            // propListView.selectedItems = [];
+            
             propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
             propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
         }
         bind(newPropButton, MouseEvent.CLICK, newPropCallback);
-        // newKeybind(["DELETE"], cancelInput ? 0 : deletePropCallback);
+        
 
 
         var editPropButton = stageDataWindow.findComponent("editPropButton");
@@ -781,14 +784,10 @@ class StageEditorTheSecond extends MusicBeatState {
             } else {
                 cancelInput = true;
 
-                /* if (editPropWindow != null) {
-                    windowManager.removeWindow(editPropWindow);
-                    editPropWindow.destroy();
-                    editPropWindow = null;
-                } */
+                
 
                 var propData = getSelectedPropData();
-                // trace(propData);
+                
 
                 editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropWindow"));
                 editPropWindow.screenCenter();
@@ -947,7 +946,7 @@ class StageEditorTheSecond extends MusicBeatState {
                     if (offsetTween != null)
                         offsetTween.cancel();
                     if (!editAnimToggle) {
-                        //offsetTween = FlxTween.num(editPropWindowOffset, -390, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                        
                         editPropWindowOffset = -390;
 
                         editAnimationsWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
@@ -982,7 +981,7 @@ class StageEditorTheSecond extends MusicBeatState {
                                 assetPathTextField.onChange = ()->{
                                     i.assetPath = assetPathTextField.text;
                                     animation.text = i.assetPath;
-                                    // animation.id = i.assetPath;
+                                    
                                 }
 
                                 var nameTextField = animation.findComponent("editAnimWindowAnimNameTextField");
@@ -1006,7 +1005,7 @@ class StageEditorTheSecond extends MusicBeatState {
                                     frameIndicesTextField.text = frameIndicesTextField.text.replace(" ,", ",");
                                     frameIndicesTextField.text = frameIndicesTextField.text.replace(",,", ",");
                                     i.frameIndices = stringToIndices(frameIndicesTextField.text);
-                                    // i.prefix = frameIndicesTextField.text;
+                                    
                                 }
 
                                 var xOffsetStepper = animation.findComponent("editAnimWindowAnimOffsetXStepper");
@@ -1106,7 +1105,7 @@ class StageEditorTheSecond extends MusicBeatState {
                         propData.name = nameTextField.text;
                         propData.assetPath = assetPathTextField.text;
                         reloadStage();
-                        // deselectStage();
+                        
                         deselectChars();
                         refreshPropList();
                         resetChars();
@@ -1177,10 +1176,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
 
-        /* var propListView = stageDataWindow.findComponent("propsListView");
-        propListView.onDataChanged = (data) -> {
-            trace(data);
-        } */
+        
 
         propListView = stageDataWindow.findComponent("propsListView");
         characterListView = stageDataWindow.findComponent("charactersListView");
@@ -1189,8 +1185,8 @@ class StageEditorTheSecond extends MusicBeatState {
             target ??= 1;
             propListView.selectedItems = [];
             propListView.selectedItem = null;
-            // if (selectedProp != null)
-            //     selectedProp.shader = null;
+            
+            
             selectedProp = null;
             var index = 0;
             for (i in currentStage.members) {
@@ -1200,7 +1196,7 @@ class StageEditorTheSecond extends MusicBeatState {
                         isProp = true;
                 }
                 if (isProp) {
-                    // i?.color = target == 1 ? FlxColor.fromWebString(currentStage?._data?.props[index]?.color ?? "#FFFFFF") : 0xFF111111;
+                    
                     i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
                 }
 
@@ -1221,10 +1217,7 @@ class StageEditorTheSecond extends MusicBeatState {
             characterListView.selectedItems = [];
             selectedCharacter = null;
             selectedCharacterType = "none";
-            /* selectedProp = null;
-            for (i in currentStage.members) {
-                i.alpha = 1;
-            } */
+            
         };
 
         characterListView.onChange = characterListViewCallback = ()->{
@@ -1297,10 +1290,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
             });
             deselectChars();
-            // clickIndex = 0;
-            // doubleClickTimer = 0;
-            /* if (doubleClickTween != null)
-                doubleClickTween.cancel(); */
+            
+            
+            
         }
 
         newKeybind(["ESCAPE"],  ()->{
@@ -1320,7 +1312,7 @@ class StageEditorTheSecond extends MusicBeatState {
             currentStage.onCreate();
             currentStage._data = customStageRegistry.get(stageList.selectedItem.id);
             currentStage.id = stageList.selectedItem.id;
-            // trace(customStageRegistry.get(stageList.selectedItem.id));
+            
             reloadStage();
             insert(0, currentStage);
 
@@ -1340,7 +1332,7 @@ class StageEditorTheSecond extends MusicBeatState {
             if (currentStage == null) return;
 
             currentStage._data.name = stageNameTextField.text;
-            //currentStage.name = stageNameTextField.text;
+            
             stageList.text = stageNameTextField.text;
             stageList.selectedItem.text = stageNameTextField.text;
 
@@ -1350,14 +1342,13 @@ class StageEditorTheSecond extends MusicBeatState {
         zoomStepper.onChange = ()->{
             if (currentStage == null) return;
             currentStage._data.cameraZoom = zoomStepper.pos;
-            // currentStage.camZoom = zoomStepper.pos;
+            
         }
 
         stageList.selectedItem = { text: "Main Stage" };
 
-        /* editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
-        editPropWindow.windowManager = windowManager; */
-        // add(editPropWindow);
+        
+        
 
         initNotification();
 
@@ -1398,14 +1389,14 @@ class StageEditorTheSecond extends MusicBeatState {
                     negativePositive.x -= negativePositive.width;
                     negativePositive.y -= negativePositive.height;
                 case 1:
-                    // negativePositive.x += negativePositive.width;
+                    
                     negativePositive.y -= negativePositive.height;
                 case 2:
                     negativePositive.x -= negativePositive.width;
-                    // negativePositive.y += negativePositive.height;
+                    
                 case 3:
-                    // negativePositive.x += negativePositive.width;
-                    // negativePositive.y += negativePositive.height;
+                    
+                    
 
             }
             negativePositive.cameras = [camGame];
@@ -1434,7 +1425,7 @@ class StageEditorTheSecond extends MusicBeatState {
             add(editCharacterWindow);
             cancelInput = true;
 
-            //hasCharacterEditorInstalled = false;
+            
             editCharacterWindow.findComponent("editCharaterWindowOpenEditor").disabled = !hasCharacterEditorInstalled;
             if (!hasCharacterEditorInstalled) {
                 editCharacterWindow.findComponent("editorBox").tooltip = "Nova Character Editor is Not Installed";
@@ -1467,7 +1458,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 cancelInput = false;
                 windowManager.closeWindow(editCharacterWindow);
                 deselectStage();
-                // deselectChars();
+                
                 resetChars();
                 forceUpdateBounds = true;
                 characterListViewCallback();
@@ -1614,17 +1605,11 @@ class StageEditorTheSecond extends MusicBeatState {
 
                     FunkinSound.playMusic(musicMenu.selectedItem.id, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 
-                    // FlxG.sound.music.fadeIn(0.5, 0, 1);
+                    
                 }
-                /* var thing = new MenuItem();
-                thing.text = name;
-                thing.id = file;
-                thing.onClick = ()->{
-                    FunkinSound.playMusic(file, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
-                    FlxG.sound.music.fadeIn(0.5, 0, 1);
-                } */
+                
 
-                //musicMenu.addComponent(thing);
+                
             }
         }
 
@@ -1632,8 +1617,7 @@ class StageEditorTheSecond extends MusicBeatState {
         opponentDropdown.selectedItem = { text: "Daddy Dearest" };
         spectatorDropdown.selectedItem = { text: "Girlfriend" };
 
-       /*  menuBar.findComponent("undo").onClick = ()->undoCallback;
-       menuBar.findComponent("redo").onClick = ()->redoCallback; */
+       
 
         playerBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
             thickness: 2,
@@ -1810,7 +1794,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         currentStage.buildStage();
         
-        // Debugging print
+        
         for (i in currentStage._data.props) {
             trace(i.scale);
         }
@@ -1910,17 +1894,9 @@ class StageEditorTheSecond extends MusicBeatState {
         // outlineShader.setFloat('iTime', iTime);
 
 
-        /* if (selectedProp != null) {
-            var point = new FlxPoint(FlxG.mouse.x, FlxG.mouse.y);
-            point.x += camGame.scroll.x;
-            point.y += camGame.scroll.y;
-            selectedProp.angle = FlxAngle.angleBetweenPoint(selectedProp, point, true);
-            trace(selectedProp.angle);
-        } */
+        
 
-        /* propListView.disabled = cancelInput;
-        characterListView.disabled = cancelInput;
-        stageList.disabled = cancelInput; */
+        
         stageDataWindow.disabled = cancelInput;
 
         if (menuBar != null)
@@ -1942,35 +1918,13 @@ class StageEditorTheSecond extends MusicBeatState {
 
         if (FlxG.mouse.justPressed) {
             FlxG.sound.play(Paths.sound("click"));
-            /*
-            var circleSprite = new FlxShapeCircle(0, 0, 5, {
-                thickness: 2,
-                color: FlxColor.WHITE,
-                pixelHinting: false,
-                scaleMode: null,
-                capsStyle: null,
-                jointStyle: null,
-                miterLimit: 200
-            }, FlxColor.TRANSPARENT);
-            circleSprite.antialiasing = true;
-
-            circleSprite.x = FlxG.mouse.x - (circleSprite.radius) + 3;
-            circleSprite.y = FlxG.mouse.y - (circleSprite.radius) + 3;
-            add(circleSprite);
-
-            FlxTween.num(5, 20, 0.2, {}, function(num) {
-                circleSprite.radius = num;
-                circleSprite.x = FlxG.mouse.x - (circleSprite.radius) + 3;
-                circleSprite.y = FlxG.mouse.y - (circleSprite.radius) + 3;
-            });
-            FlxTween.tween(circleSprite, { alpha: 0 }, 0.2);
-            */
+            
         }
 
         for (keybind in keybinds) {
             var pressed = true;
             var index = 0;
-            //trace(keybind);
+            
             for (key in keybind.keys) {
                 if (index == keybind.keys.length - 1 && keybind.type != "pressed") {
                     if (!Reflect.getProperty(FlxG.keys.justPressed, key)) {
@@ -2054,8 +2008,7 @@ class StageEditorTheSecond extends MusicBeatState {
         if ((!FlxG.keys.pressed.Q && !FlxG.keys.pressed.E) || forceUpdateBounds) {
 
 
-            /* if ((playerBoundingBox.shapeWidth == playerBoundingBox.shapeHeight && playerBoundingBox.shapeWidth == 200) || forceUpdateBounds)
-                resetChars(); */
+            
 
             if ((playerBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) && playerBoundingBox.visible) {
                 playerBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
@@ -2090,21 +2043,14 @@ class StageEditorTheSecond extends MusicBeatState {
 
         forceUpdateBounds = false;
 
-        if (selectedProp != null /* && FlxG.mouse.pressed */ && !cancelInput) {
+        if (selectedProp != null  && !cancelInput) {
             for (i in currentStage._data.props) {
                 if (i.name == selectedProp.name) {
                     i.position[0] = Math.round(selectedProp.x);
                     i.position[1] = Math.round(selectedProp.y);
                 }
             }
-            /* selectedProp.x += FlxG.mouse.deltaX / camGame.zoom;
-            selectedProp.y += FlxG.mouse.deltaY / camGame.zoom;
-            for (i in currentStage._data.props) {
-                if (i.name == selectedProp.name) {
-                    i.position[0] = Math.round(selectedProp.x);
-                    i.position[1] = Math.round(selectedProp.y);
-                }
-            } */
+            
         }
 
         if (selectedCharacter != null && FlxG.mouse.pressed && !cancelInput) {
@@ -2148,14 +2094,14 @@ class StageEditorTheSecond extends MusicBeatState {
                 reloadStage();
                 resetChars();
 
-                // propListView.selectedItems = [];
+                
                 propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
                 propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
             }
 
             bind(rightClickMenu.findComponent("edit"), MouseEvent.CLICK, editPropCallback);
             bind(rightClickMenu.findComponent("delete"), MouseEvent.CLICK, deletePropCallback);
-            // bind(rightClickMenu.findComponent("duplicate"), MouseEvent.CLICK, duplicatePropCallback);
+            
         }
 
     }
@@ -2164,19 +2110,19 @@ class StageEditorTheSecond extends MusicBeatState {
         return FlxG.mouse.overlaps(tLC, camGame) || FlxG.mouse.overlaps(tMC, camGame) || FlxG.mouse.overlaps(tRC, camGame) || FlxG.mouse.overlaps(mRC, camGame) || FlxG.mouse.overlaps(bRC, camGame) || FlxG.mouse.overlaps(bMC, camGame) || FlxG.mouse.overlaps(bLC, camGame) || FlxG.mouse.overlaps(mLC, camGame);
     }
 
-    // Helper function moved out of the update loop to prevent memory leaks
+    
     function updateTransformHandle(sprite:FunkinSprite, x:Float, y:Float, mouseDeltaX:Float, mouseDeltaY:Float, invZoom:Float, isSmall:Bool = false) {
         if (sprite == null) return;
         
         var s = isSmall ? (0.9 * invZoom) : invZoom;
         
-        // Only update properties if they actually changed to save processing
+        
         if (sprite.scale.x != s || sprite.scale.y != s) {
             sprite.scale.set(s, s);
             sprite.updateHitbox();
         }
 
-        // Only update scroll factor if changed
+        
         if (selectedProp != null && (sprite.scrollFactor.x != selectedProp.scrollFactor.x || sprite.scrollFactor.y != selectedProp.scrollFactor.y)) {
              sprite.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
         }
@@ -2184,11 +2130,11 @@ class StageEditorTheSecond extends MusicBeatState {
         sprite.x = x; 
         sprite.y = y;
 
-        // Visual updates
+        
         var isOverlapping = FlxG.mouse.overlaps(sprite, camGame);
         sprite.alpha = isOverlapping ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
 
-        // Drag visual logic (Actual movement logic remains in the main loop, this just handles the sprite visual)
+        
         if (FlxG.mouse.pressed && isOverlapping) {
              sprite.x += mouseDeltaX;
              sprite.y += mouseDeltaY;
@@ -2197,7 +2143,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
     var previous = "something";
     function updateTransformTool() {
-        // Optimization: Reset previous prop reference to ensure clean state switches
+        
         var skip = false;
         if (previous != selectedProp) {
             previous = selectedProp;
@@ -2205,7 +2151,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
         if (previous == null && !skip) return;
         
-        // Camera Sync
+        
         if (camInteract != null) {
             camInteract.scroll.x = camGame.scroll.x;
             camInteract.scroll.y = camGame.scroll.y;
@@ -2215,9 +2161,9 @@ class StageEditorTheSecond extends MusicBeatState {
 
         if (selectedProp == null) return;
 
-        // --- OPTIMIZATION: Calculate math once per frame ---
-        // IMPORTANT: Ensure CornerCalculation does not create new FlxPoints internally without pooling!
-        // If CornerCalculation returns new objects every frame, that is a separate leak source.
+        
+        
+        
         var propCorners = CornerCalculation.calculate(selectedProp);
         
         var invZoom = 1 / camGame.zoom; 
@@ -2226,15 +2172,18 @@ class StageEditorTheSecond extends MusicBeatState {
         var mouseDeltaX = FlxG.mouse.deltaX / camGame.zoom;
         var mouseDeltaY = FlxG.mouse.deltaY / camGame.zoom;
 
-        // --- Logic Blocks ---
+        
 
         if (tLC != null) {
+            tLC.x += mouseDeltaX;
+            tLC.y += mouseDeltaY;
             if (FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
                 selectedProp.x += mouseDeltaX;
                 selectedProp.y += mouseDeltaY;
                 selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
                 selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
             }
+            
             updateTransformHandle(tLC, propCorners.topLeftCorner.x - (tLC.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
         }
 
@@ -2302,7 +2251,7 @@ class StageEditorTheSecond extends MusicBeatState {
             updateTransformHandle(bRC, propCorners.topLeftCorner.x - (bRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (bRC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
         }
 
-        // Safety Clamps
+        
         if (selectedProp.scale.x < 0.1) selectedProp.scale.x = 0.1;
         if (selectedProp.scale.y < 0.1) selectedProp.scale.y = 0.1;
 
@@ -2370,10 +2319,10 @@ class StageEditorTheSecond extends MusicBeatState {
                 } else {
                     i.playAnimation(i._data.startingAnimation ?? "idle");
                 }
-                // player.playAnimation(, true);
-                // player.playAnimation("idle", true);
+                
+                
             }
-            // test
+            
         }
         danceToggle = !danceToggle;
     }
@@ -2385,7 +2334,7 @@ class StageEditorTheSecond extends MusicBeatState {
     function destroy() {
         super.destroy();
         Cursor.hide();
-        // Save.vailableSlot('nova-editors', save.data);
+        
     }
 
     public function test() {
@@ -2621,18 +2570,10 @@ class StageEditorTheSecond extends MusicBeatState {
 
     function getCornerCircle(outer:Bool) {
         var theCircle = FunkinSprite.create(0, 0, 'circle');
-        /* var theCircle = new FlxShapeCircle(0, 0, outer ? 15 : 10, {
-            thickness: 3,
-            color: outer ? 0xFFbbe3e9 : FlxColor.TRANSPARENT,
-            pixelHinting: false,
-            scaleMode: null,
-            capsStyle: null,
-            jointStyle: null,
-            miterLimit: 200
-        }, outer ? FlxColor.TRANSPARENT : 0xFFf7a7a7); */
+        
         theCircle.antialiasing = true;
-        //add(outerRing);
-        //theCircle.add(outerRing);
+        
+        
         return theCircle;
     }
 
