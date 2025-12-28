@@ -90,6 +90,9 @@
                 <vbox>
                     <frame text="v2.1.2" width="425">
                         <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed transform tool causing memory leak every frame.\n  (Again)" />
+                            <label text="• Fixed the +/- text not hiding with HUD." />
                             <label text="—— Tweak ——" />
                             <label text="• Optimized HaxeUI for less memory leakage" />
                             <spacer />
