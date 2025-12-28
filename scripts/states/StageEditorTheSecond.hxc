@@ -1268,12 +1268,11 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         propListView.onChange = propListViewCallback = ()->{
-            /* xLine.scrollFactor.y = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.y;
-            yLine.scrollFactor.x = currentStage.getNamedProp(propListView.selectedItem.text).scrollFactor.x; */
-            // if (selectedProp != null)
-            //     selectedProp.shader = null;
+            
+            
+            
             selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
-            // selectedProp.shader = outlineShader;
+            
 
             currentStage.forEachAlive((i)->{
                 if (i.name == opponent.name || i.name == player.name || i.name == spectator.name) {
@@ -1891,7 +1890,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         iTime += elapsed;
-        // outlineShader.setFloat('iTime', iTime);
+        
 
 
         
