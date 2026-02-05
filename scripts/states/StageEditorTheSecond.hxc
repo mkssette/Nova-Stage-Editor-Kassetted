@@ -228,7 +228,7 @@ class StageEditorTheSecond extends MusicBeatState {
     var hasCharacterEditorInstalled:Bool = false;
 
     var blacklist = [
-        "Main Stage",
+        /* "Main Stage",
         "Main Stage [Erect]",
 
         "Spooky Mansion",
@@ -254,7 +254,7 @@ class StageEditorTheSecond extends MusicBeatState {
         "School (Hate) [Erect]",
 
         "Tankman Battlefield",
-        "Tankman Battlefield [Erect]"
+        "Tankman Battlefield [Erect]" */
     ];
 
     /* -- Button Callbacks -- */
