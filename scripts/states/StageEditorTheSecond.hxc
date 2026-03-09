@@ -2314,9 +2314,9 @@ class StageEditorTheSecond extends MusicBeatState {
             if (i == null) continue;
             if (curBeat % i._data.danceEvery == 0) {
                 if (i._data.startingAnimation == "danceRight" || i._data.startingAnimation == "danceLeft") {
-                    i.playAnimation(danceToggle ? "danceRight" : "danceLeft");
+                    i.playAnimation(danceToggle ? "danceRight" : "danceLeft", false, true);
                 } else {
-                    i.playAnimation(i._data.startingAnimation ?? "idle");
+                    i.playAnimation(i._data.startingAnimation ?? "idle", false, true);
                 }
                 
                 
@@ -2471,7 +2471,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 currentStage.add(player);
             }
 
-            player.playAnimation(player._data.animations[0].name);
+            player.playAnimation(player._data.animations[0].name, false, true);
             player.animation.finish();
             player.updateHitbox();
         }
@@ -2494,7 +2494,7 @@ class StageEditorTheSecond extends MusicBeatState {
                 currentStage.add(opponent);
             }
 
-            opponent.playAnimation(opponent._data.animations[0].name);
+            opponent.playAnimation(opponent._data.animations[0].name, false, true);
             opponent.animation.finish();
             opponent.updateHitbox();
         }
@@ -2576,7 +2576,7 @@ class StageEditorTheSecond extends MusicBeatState {
         return theCircle;
     }
 
-    override function onFocusLost(e) {
+    /* override function onFocusLost(e) {
         super.onFocusLost(e);
         focusTimer = 2;
     }
@@ -2584,5 +2584,5 @@ class StageEditorTheSecond extends MusicBeatState {
     override function onFocus(e) {
         super.onFocus(e);
         focusTimer = 2;
-    }
+    } */
 }

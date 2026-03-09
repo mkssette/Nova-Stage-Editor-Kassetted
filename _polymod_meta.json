@@ -3,23 +3,23 @@
   "title": "Nova Stage Editor",
   "description": "An actually good stage editor.",
   "contributors": [
-	  {
+    {
       "name": "Nebula S. Nova",
       "icon": "nebula",
       "color": "#9500ff",
       "roles": "Main Coder",
       "url": "https://www.youtube.com/@ChinosModded"
     },
-	  {
-        "name": "GENZU",
-        "icon": "genzu",
-        "color": "#ff9ecf",
-        "roles": "Coded UI XMLs",
-        "url": "https://www.youtube.com/@_genzu"
+    {
+      "name": "GENZU",
+      "icon": "genzu",
+      "color": "#ff9ecf",
+      "roles": "Coded UI XMLs",
+      "url": "https://www.youtube.com/@_genzu"
     }
   ],
   "api_version": "0.8.0",
-  "mod_version": "2.1.3",
+  "mod_version": "2.2.0",
   "license": "Apache 2.0",
   "dependencies": {
     "extra-utils": ">=1.0.0"
