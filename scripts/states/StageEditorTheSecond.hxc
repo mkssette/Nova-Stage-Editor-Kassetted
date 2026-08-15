@@ -156,6 +156,11 @@ class StageEditorTheSecond extends MusicBeatState {
     // --  Other -- \\
     var cC;
     var rC;
+    var draggingHandle:String = null;
+    var lastMouseWorldX:Float = 0;
+    var lastMouseWorldY:Float = 0;
+    var mouseWorldDeltaX:Float = 0;
+    var mouseWorldDeltaY:Float = 0;
 
     var stageRegistry;
     var customStageRegistry = [
@@ -1528,6 +1533,12 @@ class StageEditorTheSecond extends MusicBeatState {
     function update(elapsed) {
         super.update(elapsed);
 
+        var currentWorldPos = FlxG.mouse.getWorldPosition(camGame);
+        mouseWorldDeltaX = currentWorldPos.x - lastMouseWorldX;
+        mouseWorldDeltaY = currentWorldPos.y - lastMouseWorldY;
+        lastMouseWorldX = currentWorldPos.x;
+        lastMouseWorldY = currentWorldPos.y;
+
         if (FlxG.mouse.justPressed && rightClickMenu != null && !FlxG.mouse.overlaps(rightClickMenu))
 		{
 			rightClickMenu.destroy();
@@ -1623,10 +1634,18 @@ class StageEditorTheSecond extends MusicBeatState {
 
         updateTransformTool();
 
-        if (!cancelInput && (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) && selectedCharacter == null) {
-            if (FlxG.mouse.pressed && !FlxG.mouse.overlaps(stageDataWindow) && !FlxG.mouse.overlaps(menuBar)) {
-                camGame.scroll.x -= (FlxG.mouse.deltaX/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.x : 1);
-                camGame.scroll.y -= (FlxG.mouse.deltaY/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.y : 1);
+        if (!cancelInput && !FlxG.mouse.overlaps(stageDataWindow) && !FlxG.mouse.overlaps(menuBar)) {
+            var scrollSpeed = 700 * elapsed / camGame.zoom;
+            var margin = 25;
+            if (FlxG.mouse.screenX > 2 && FlxG.mouse.screenX < margin) {
+                camGame.scroll.x -= scrollSpeed;
+            } else if (FlxG.mouse.screenX < FlxG.width - 2 && FlxG.mouse.screenX > FlxG.width - margin) {
+                camGame.scroll.x += scrollSpeed;
+            }
+            if (FlxG.mouse.screenY > 2 && FlxG.mouse.screenY < margin + (menuBar != null ? menuBar.height : 0)) {
+                camGame.scroll.y -= scrollSpeed;
+            } else if (FlxG.mouse.screenY < FlxG.height - 2 && FlxG.mouse.screenY > FlxG.height - margin) {
+                camGame.scroll.y += scrollSpeed;
             }
         }
         if (!cancelInput) {
@@ -1728,20 +1747,27 @@ class StageEditorTheSecond extends MusicBeatState {
             
         }
 
-        if (selectedCharacter != null && FlxG.mouse.pressed && !cancelInput) {
-            selectedCharacter.x += FlxG.mouse.deltaX / camGame.zoom;
-            selectedCharacter.y += FlxG.mouse.deltaY / camGame.zoom;
+        if (FlxG.mouse.justReleased) draggingHandle = null;
 
-            switch (selectedCharacterType) {
-                case "bf":
-                    currentStage._data.characters.bf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
-                    currentStage._data.characters.bf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
-                case "gf":
-                    currentStage._data.characters.gf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
-                    currentStage._data.characters.gf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
-                case "dad":
-                    currentStage._data.characters.dad.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
-                    currentStage._data.characters.dad.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+        if (selectedCharacter != null && !cancelInput) {
+            if (FlxG.mouse.overlaps(selectedCharacter, camGame) && FlxG.mouse.justPressed) draggingHandle = "character";
+            
+            if ((FlxG.mouse.overlaps(selectedCharacter, camGame) && FlxG.mouse.pressed && draggingHandle == null) || (draggingHandle == "character" && FlxG.mouse.pressed)) {
+                draggingHandle = "character";
+                selectedCharacter.x += FlxG.mouse.deltaX / camGame.zoom;
+                selectedCharacter.y += FlxG.mouse.deltaY / camGame.zoom;
+
+                switch (selectedCharacterType) {
+                    case "bf":
+                        currentStage._data.characters.bf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                        currentStage._data.characters.bf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                    case "gf":
+                        currentStage._data.characters.gf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                        currentStage._data.characters.gf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                    case "dad":
+                        currentStage._data.characters.dad.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                        currentStage._data.characters.dad.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                }
             }
         }
 
@@ -1782,22 +1808,21 @@ class StageEditorTheSecond extends MusicBeatState {
     }
 
     function usingTransformTool() {
-        return FlxG.mouse.overlaps(tLC, camGame) || FlxG.mouse.overlaps(tMC, camGame) || FlxG.mouse.overlaps(tRC, camGame) || FlxG.mouse.overlaps(mRC, camGame) || FlxG.mouse.overlaps(bRC, camGame) || FlxG.mouse.overlaps(bMC, camGame) || FlxG.mouse.overlaps(bLC, camGame) || FlxG.mouse.overlaps(mLC, camGame);
+        if (draggingHandle != null) return true;
+        return FlxG.mouse.overlaps(cC, camGame) || FlxG.mouse.overlaps(tLC, camGame) || FlxG.mouse.overlaps(tMC, camGame) || FlxG.mouse.overlaps(tRC, camGame) || FlxG.mouse.overlaps(mRC, camGame) || FlxG.mouse.overlaps(bRC, camGame) || FlxG.mouse.overlaps(bMC, camGame) || FlxG.mouse.overlaps(bLC, camGame) || FlxG.mouse.overlaps(mLC, camGame);
     }
 
     
-    function updateTransformHandle(sprite:FunkinSprite, x:Float, y:Float, mouseDeltaX:Float, mouseDeltaY:Float, invZoom:Float, isSmall:Bool = false) {
+    function updateTransformHandle(sprite:FunkinSprite, x:Float, y:Float, mouseDeltaX:Float, mouseDeltaY:Float, invZoom:Float, isSmall:Bool = false, ?handleID:String = null) {
         if (sprite == null) return;
         
         var s = isSmall ? (0.9 * invZoom) : invZoom;
-        
         
         if (sprite.scale.x != s || sprite.scale.y != s) {
             sprite.scale.set(s, s);
             sprite.updateHitbox();
         }
 
-        
         if (selectedProp != null && (sprite.scrollFactor.x != selectedProp.scrollFactor.x || sprite.scrollFactor.y != selectedProp.scrollFactor.y)) {
              sprite.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
         }
@@ -1805,12 +1830,11 @@ class StageEditorTheSecond extends MusicBeatState {
         sprite.x = x; 
         sprite.y = y;
 
-        
         var isOverlapping = FlxG.mouse.overlaps(sprite, camGame);
-        sprite.alpha = isOverlapping ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+        var isDraggingThis = handleID != null && draggingHandle == handleID;
+        sprite.alpha = isOverlapping || isDraggingThis ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
 
-        
-        if (FlxG.mouse.pressed && isOverlapping) {
+        if (FlxG.mouse.pressed && (isOverlapping || isDraggingThis)) {
              sprite.x += mouseDeltaX;
              sprite.y += mouseDeltaY;
         }
@@ -1844,86 +1868,134 @@ class StageEditorTheSecond extends MusicBeatState {
         var invZoom = 1 / camGame.zoom; 
         var mouseX = FlxG.mouse.x;
         var mouseY = FlxG.mouse.y;
-        var mouseDeltaX = FlxG.mouse.deltaX / camGame.zoom;
-        var mouseDeltaY = FlxG.mouse.deltaY / camGame.zoom;
+        var mouseDeltaX = mouseWorldDeltaX;
+        var mouseDeltaY = mouseWorldDeltaY;
 
-        
+        var baseW = selectedProp.width / selectedProp.scale.x;
+        var baseH = selectedProp.height / selectedProp.scale.y;
+
+        var applyScale = function(sdx:Float, sdy:Float, anchorX:Float, anchorY:Float, isCorner:Bool) {
+            var alt = FlxG.keys.pressed.ALT;
+            var shift = FlxG.keys.pressed.SHIFT;
+
+            if (shift) {
+                if (isCorner) {
+                    if (Math.abs(sdx) > Math.abs(sdy)) {
+                        sdy = Math.abs(sdx) * (sdx >= 0 ? 1 : -1) * (selectedProp.scale.y / selectedProp.scale.x);
+                    } else {
+                        sdx = Math.abs(sdy) * (sdy >= 0 ? 1 : -1) * (selectedProp.scale.x / selectedProp.scale.y);
+                    }
+                } else {
+                    if (sdx != 0) {
+                        sdy = Math.abs(sdx) * (sdx >= 0 ? 1 : -1) * (selectedProp.scale.y / selectedProp.scale.x);
+                        anchorY = 0.5;
+                    } else if (sdy != 0) {
+                        sdx = Math.abs(sdy) * (sdy >= 0 ? 1 : -1) * (selectedProp.scale.x / selectedProp.scale.y);
+                        anchorX = 0.5;
+                    }
+                }
+            }
+
+            if (alt) {
+                sdx *= 2;
+                sdy *= 2;
+                anchorX = 0.5;
+                anchorY = 0.5;
+            }
+
+            var oldW = selectedProp.width;
+            var oldH = selectedProp.height;
+
+            selectedProp.scale.x += sdx;
+            selectedProp.scale.y += sdy;
+
+            if (selectedProp.scale.x < 0.1) selectedProp.scale.x = 0.1;
+            if (selectedProp.scale.y < 0.1) selectedProp.scale.y = 0.1;
+
+            selectedProp.updateHitbox();
+
+            selectedProp.x -= (selectedProp.width - oldW) * anchorX;
+            selectedProp.y -= (selectedProp.height - oldH) * anchorY;
+        };
 
         if (tLC != null) {
-            tLC.x += mouseDeltaX;
-            tLC.y += mouseDeltaY;
-            if (FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.x += mouseDeltaX;
-                selectedProp.y += mouseDeltaY;
-                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            if (FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "tLC";
+            if ((FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "tLC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "tLC";
+                applyScale(-mouseDeltaX / baseW, -mouseDeltaY / baseH, 1, 1, true);
             }
-            
-            updateTransformHandle(tLC, propCorners.topLeftCorner.x - (tLC.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
+            updateTransformHandle(tLC, propCorners.topLeftCorner.x - (tLC.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom, false, "tLC");
         }
 
         if (tMC != null) {
             if (FlxG.mouse.justPressed) mouseLock.x = mouseX;
-            if (FlxG.mouse.overlaps(tMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.y += mouseDeltaY;
-                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            if (FlxG.mouse.overlaps(tMC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "tMC";
+            if ((FlxG.mouse.overlaps(tMC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "tMC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "tMC";
+                applyScale(0, -mouseDeltaY / baseH, 0.5, 1, false);
                 FlxG.mouse.x = Std.int(mouseLock.x); 
             }
-            updateTransformHandle(tMC, propCorners.topLeftCorner.x - (tLC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
+            updateTransformHandle(tMC, propCorners.topLeftCorner.x - (tLC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom, true, "tMC");
         }
 
         if (mLC != null) {
             if (FlxG.mouse.justPressed) mouseLock.y = mouseY;
-            if (FlxG.mouse.overlaps(mLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.x += mouseDeltaX;
-                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+            if (FlxG.mouse.overlaps(mLC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "mLC";
+            if ((FlxG.mouse.overlaps(mLC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "mLC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "mLC";
+                applyScale(-mouseDeltaX / baseW, 0, 1, 0.5, false);
                 FlxG.mouse.y = Std.int(mouseLock.y);
             }
-            updateTransformHandle(mLC, propCorners.topLeftCorner.x - (mLC.width/2), propCorners.topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
+            updateTransformHandle(mLC, propCorners.topLeftCorner.x - (mLC.width/2), propCorners.topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true, "mLC");
         }
 
         if (tRC != null) {
-            if (FlxG.mouse.overlaps(tRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.y += mouseDeltaY;
-                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            if (FlxG.mouse.overlaps(tRC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "tRC";
+            if ((FlxG.mouse.overlaps(tRC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "tRC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "tRC";
+                applyScale(mouseDeltaX / baseW, -mouseDeltaY / baseH, 0, 1, true);
             }
-            updateTransformHandle(tRC, propCorners.topLeftCorner.x - (tRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (tRC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
+            updateTransformHandle(tRC, propCorners.topLeftCorner.x - (tRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (tRC.height/2), mouseDeltaX, mouseDeltaY, invZoom, false, "tRC");
         }
 
         if (mRC != null) {
             if (FlxG.mouse.justPressed) mouseLock.y = mouseY;
-            if (FlxG.mouse.overlaps(mRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+            if (FlxG.mouse.overlaps(mRC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "mRC";
+            if ((FlxG.mouse.overlaps(mRC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "mRC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "mRC";
+                applyScale(mouseDeltaX / baseW, 0, 0, 0.5, false);
                 FlxG.mouse.y = Std.int(mouseLock.y);
             }
-            updateTransformHandle(mRC, propCorners.topLeftCorner.x - (mRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
+            updateTransformHandle(mRC, propCorners.topLeftCorner.x - (mRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true, "mRC");
         }
 
         if (bLC != null) {
-            if (FlxG.mouse.overlaps(bLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.x += mouseDeltaX;
-                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            if (FlxG.mouse.overlaps(bLC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "bLC";
+            if ((FlxG.mouse.overlaps(bLC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "bLC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "bLC";
+                applyScale(-mouseDeltaX / baseW, mouseDeltaY / baseH, 1, 0, true);
             }
-            updateTransformHandle(bLC, propCorners.topLeftCorner.x - (bLC.width/2), propCorners.topLeftCorner.y - (bLC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
+            updateTransformHandle(bLC, propCorners.topLeftCorner.x - (bLC.width/2), propCorners.topLeftCorner.y - (bLC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom, false, "bLC");
         }
 
         if (bMC != null) {
             if (FlxG.mouse.justPressed) mouseLock.x = mouseX;
-            if (FlxG.mouse.overlaps(bMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            if (FlxG.mouse.overlaps(bMC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "bMC";
+            if ((FlxG.mouse.overlaps(bMC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "bMC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "bMC";
+                applyScale(0, mouseDeltaY / baseH, 0.5, 0, false);
                 FlxG.mouse.x = Std.int(mouseLock.x);
             }
-            updateTransformHandle(bMC, propCorners.topLeftCorner.x - (bMC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (bMC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom, true);
+            updateTransformHandle(bMC, propCorners.topLeftCorner.x - (bMC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (bMC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom, true, "bMC");
         }
 
         if (bRC != null) {
-            if (FlxG.mouse.overlaps(bRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
-                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
-                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            if (FlxG.mouse.overlaps(bRC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "bRC";
+            if ((FlxG.mouse.overlaps(bRC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "bRC" && FlxG.mouse.pressed && !cancelInput)) {
+                draggingHandle = "bRC";
+                applyScale(mouseDeltaX / baseW, mouseDeltaY / baseH, 0, 0, true);
             }
-            updateTransformHandle(bRC, propCorners.topLeftCorner.x - (bRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (bRC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
+            updateTransformHandle(bRC, propCorners.topLeftCorner.x - (bRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (bRC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom, false, "bRC");
         }
 
         
@@ -1939,13 +2011,16 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
                 cC.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
 
-                if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed) {
+                if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "cC";
+
+                if ((FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "cC" && FlxG.mouse.pressed && !cancelInput)) {
+                    draggingHandle = "cC";
                     selectedProp.x += mouseDeltaX;
                     selectedProp.y += mouseDeltaY;
                 }
                 cC.x = selectedProp.x + (selectedProp.width/2) - (cC.width/2);
                 cC.y = selectedProp.y + (selectedProp.height/2) - (cC.height/2);
-                cC.alpha = FlxG.mouse.overlaps(cC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+                cC.alpha = FlxG.mouse.overlaps(cC, camGame) || draggingHandle == "cC" ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
             } else {
                 cC.alpha = 0.01;
             }
