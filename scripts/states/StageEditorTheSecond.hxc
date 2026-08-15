@@ -8,10 +8,15 @@ import funkin.audio.FunkinSound;
 
 import funkin.play.stage.Stage;
 
+import openfl.display.BitmapData;
+import openfl.geom.Rectangle;
+import openfl.geom.Point;
+
 import haxe.ui.RuntimeComponentBuilder;
 
 import flixel.FlxCamera;
 
+import haxe.ui.util.Variant;
 import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
 import haxe.ui.core.TextDisplay;
@@ -200,6 +205,7 @@ class StageEditorTheSecond extends MusicBeatState {
     var editCharacterWindow;
 
     var editPropWindow;
+    var characterGridWindow;
     var editPropWindowOffset = 0;
     var editAnimToggle = false;
     var offsetTween:FlxTween;
@@ -230,6 +236,7 @@ class StageEditorTheSecond extends MusicBeatState {
         if (editPropWindow != null && editPropWindow.exists && editPropWindow.cameras != null && FlxG.mouse.overlaps(editPropWindow)) isMouseOverUI = true;
         if (editAnimationsWindow != null && editAnimationsWindow.exists && editAnimationsWindow.cameras != null && FlxG.mouse.overlaps(editAnimationsWindow)) isMouseOverUI = true;
         if (userGuideWindow != null && userGuideWindow.exists && userGuideWindow.cameras != null && FlxG.mouse.overlaps(userGuideWindow)) isMouseOverUI = true;
+        if (characterGridWindow != null && characterGridWindow.exists && characterGridWindow.cameras != null && FlxG.mouse.overlaps(characterGridWindow)) isMouseOverUI = true;
         if (menuBar != null && menuBar.exists && menuBar.cameras != null && FlxG.mouse.overlaps(menuBar)) isMouseOverUI = true;
 
         var hasFocus = false;
@@ -861,56 +868,129 @@ class StageEditorTheSecond extends MusicBeatState {
         var playerDropdown = stageDataWindow.findComponent("playerDropdown");
         var opponentDropdown = stageDataWindow.findComponent("opponentDropdown");
         var spectatorDropdown = stageDataWindow.findComponent("spectatorDropdown");
-        for (i in nameList) {
-            playerDropdown.dataSource.add({text: i});
-            opponentDropdown.dataSource.add({text: i});
-            spectatorDropdown.dataSource.add({text: i});
-        }
 
-        playerDropdown.onChange = ()->{
-            currentStage.getBoyfriend(true);
-            for (i in CharacterDataParser.characterCache.keys()) {
-                if (CharacterDataParser.characterCache.get(i).name == playerDropdown.selectedItem.text) {
-                    player = CharacterDataParser.fetchCharacter(i);
-                    player.debug = true;
-                    resetChars();
-                    break;
-                }
+        var openCharacterGrid = null;
+        openCharacterGrid = function(buttonRef, type:String) {
+            if (characterGridWindow != null) {
+                Screen.instance.removeComponent(characterGridWindow);
+                characterGridWindow = null;
+                return; // Act as a toggle if clicking the same button again
             }
-            deselectChars();
-            deselectStage();
-            resetChars();
-        }
 
-        opponentDropdown.onChange = ()->{
-            currentStage.getDad(true);
-            for (i in CharacterDataParser.characterCache.keys()) {
-                if (CharacterDataParser.characterCache.get(i).name == opponentDropdown.selectedItem.text) {
-                    opponent = CharacterDataParser.fetchCharacter(i);
-                    opponent.debug = true;
-                    resetChars();
-                    break;
-                }
-            }
-            deselectChars();
-            deselectStage();
-            resetChars();
-        }
+            characterGridWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/characterGridMenu"));
+            characterGridWindow.x = Screen.instance.currentMouseX;
+            characterGridWindow.y = Screen.instance.currentMouseY;
+            if (characterGridWindow.x + 410 > FlxG.width) characterGridWindow.x = FlxG.width - 410 - 10;
+            if (characterGridWindow.y + 215 > FlxG.height) characterGridWindow.y = FlxG.height - 215 - 10;
+            Screen.instance.addComponent(characterGridWindow);
 
-        spectatorDropdown.onChange = ()->{
-            currentStage.getGirlfriend(true);
-            for (i in CharacterDataParser.characterCache.keys()) {
-                if (CharacterDataParser.characterCache.get(i).name == spectatorDropdown.selectedItem.text) {
-                    spectator = CharacterDataParser.fetchCharacter(i);
-                    spectator.debug = true;
-                    resetChars();
-                    break;
-                }
+            var grid = characterGridWindow.findComponent("characterGrid");
+            var charIconName = characterGridWindow.findComponent("charIconName");
+            var defaultText = "(choose a character)";
+
+            var keysArray = [];
+            for (k in CharacterDataParser.characterCache.keys()) {
+                keysArray.push(k);
             }
-            deselectChars();
-            deselectStage();
-            resetChars();
-        }
+            keysArray.sort(SortUtil.alphabetically);
+
+            for (charId in keysArray) {
+                var cData = CharacterDataParser.characterCache.get(charId);
+                if (cData == null) continue;
+                
+                var cName = charId;
+                if (cData != null && cData.name != null) cName = cData.name;
+                var charBtn = new Button();
+                charBtn.id = "charBtn_" + charId;
+                charBtn.width = 70;
+                charBtn.height = 70;
+                charBtn.iconPosition = "top";
+                charBtn.styleNames = "character-btn";
+                
+                var LIMIT = 6;
+                var displayName = cName.length > LIMIT ? cName.substring(0, LIMIT) + '.' : cName;
+                charBtn.text = displayName;
+
+                var iconAsset = CharacterDataParser.getCharPixelIconAsset(charId);
+                if (iconAsset != null) {
+                    charBtn.icon = Variant.fromImageData(iconAsset);
+                } else {
+                    var graphic = FlxG.bitmap.add(Paths.image('icons/icon-' + cData.healthIcon));
+                    if (graphic == null || graphic.width < 50) graphic = FlxG.bitmap.add(Paths.image('icons/icon-face'));
+                    if (graphic != null) {
+                        var frames = (graphic.width == 450 || graphic.width / graphic.height == 3) ? 3 : 2;
+                        var fw = graphic.width / frames;
+                        var bmd = new BitmapData(Std.int(fw), graphic.height, true, 0x00000000);
+                        bmd.copyPixels(graphic.bitmap, new Rectangle(0, 0, fw, graphic.height), new Point(0, 0));
+                        charBtn.icon = Variant.fromImageData(bmd);
+                    }
+                }
+
+                charBtn.onMouseOver = function(_) {
+                    if (charIconName != null) charIconName.text = cName + ' [' + charId + ']';
+                };
+                charBtn.onMouseOut = function(_) {
+                    if (charIconName != null) charIconName.text = defaultText;
+                };
+
+                charBtn.onClick = function(_) {
+                    updateCharacterButton(buttonRef, type, charId);
+                    if (type == "Player") {
+                        currentStage.getBoyfriend(true);
+                        player = CharacterDataParser.fetchCharacter(charId);
+                        if (player != null) player.debug = true;
+                    } else if (type == "Opponent") {
+                        currentStage.getDad(true);
+                        opponent = CharacterDataParser.fetchCharacter(charId);
+                        if (opponent != null) opponent.debug = true;
+                    } else if (type == "Spectator") {
+                        currentStage.getGirlfriend(true);
+                        spectator = CharacterDataParser.fetchCharacter(charId);
+                        if (spectator != null) spectator.debug = true;
+                    }
+                    resetChars();
+                    deselectChars();
+                    deselectStage();
+                    Screen.instance.removeComponent(characterGridWindow);
+                    characterGridWindow = null;
+                };
+
+                grid.addComponent(charBtn);
+            }
+            
+            var searchField = characterGridWindow.findComponent("charSearchField");
+            if (searchField != null) {
+                searchField.onChange = function(e) {
+                    var searchTerm = searchField.text.toLowerCase();
+                    for (child in grid.childComponents) {
+                        var charName = child.text.toLowerCase();
+                        var charIdMatch = child.id != null && child.id.toLowerCase().indexOf(searchTerm) >= 0;
+                        if (charName.indexOf(searchTerm) >= 0 || charIdMatch) {
+                            child.hidden = false;
+                        } else {
+                            child.hidden = true;
+                        }
+                    }
+                };
+            }
+
+            // Auto-close menu when clicking outside
+            var outsideClick = null;
+            outsideClick = function(e) {
+                if (characterGridWindow != null && !characterGridWindow.hitTest(Screen.instance.currentMouseX, Screen.instance.currentMouseY)) {
+                    Screen.instance.removeComponent(characterGridWindow);
+                    characterGridWindow = null;
+                    Screen.instance.unregisterEvent(MouseEvent.CLICK, outsideClick);
+                }
+            };
+            Screen.instance.registerEvent(MouseEvent.CLICK, outsideClick);
+        };
+
+        playerDropdown.onClick = function(_) { openCharacterGrid(playerDropdown, "Player"); };
+        opponentDropdown.onClick = function(_) { openCharacterGrid(opponentDropdown, "Opponent"); };
+        spectatorDropdown.onClick = function(_) { openCharacterGrid(spectatorDropdown, "Spectator"); };
+
+
 
 
         
@@ -975,13 +1055,17 @@ class StageEditorTheSecond extends MusicBeatState {
             
 
             currentStage.forEachAlive((i)->{
-                if (i.name == opponent.name || i.name == player.name || i.name == spectator.name) {
+                var pName = player != null ? player.name : null;
+                var oName = opponent != null ? opponent.name : null;
+                var sName = spectator != null ? spectator.name : null;
+                
+                if ((pName != null && i.name == pName) || (oName != null && i.name == oName) || (sName != null && i.name == sName)) {
                     i.alpha = switch (i.name) {
-                        case player.name:
+                        case pName:
                             currentStage._data.characters.bf?.alpha ?? 1;
-                        case opponent.name:
+                        case oName:
                             currentStage._data.characters.dad?.alpha ?? 1;
-                        case spectator.name:
+                        case sName:
                             currentStage._data.characters.gf?.alpha ?? 1;
                     }
                 } else {
@@ -1300,9 +1384,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
-        playerDropdown.selectedItem = { text: "Boyfriend" };
-        opponentDropdown.selectedItem = { text: "Daddy Dearest" };
-        spectatorDropdown.selectedItem = { text: "Girlfriend" };
+        // Removed hardcoded playerDropdown text overrides to allow proper initialization
 
        
 
@@ -1493,6 +1575,95 @@ class StageEditorTheSecond extends MusicBeatState {
             state: 'Editing a Stage: ' + currentStage.stageName,
         });
 
+        // Clear old character references from stage map
+        currentStage.getBoyfriend(true);
+        currentStage.getDad(true);
+        currentStage.getGirlfriend(true);
+
+        // Fetch character IDs safely without ?? or ?.
+        var bfId = "bf";
+        if (player != null && player.characterId != null) {
+            bfId = player.characterId;
+        } else if (currentStage._data != null && currentStage._data.characters != null && currentStage._data.characters.bf != null && currentStage._data.characters.bf.character != null) {
+            bfId = currentStage._data.characters.bf.character;
+        }
+
+        var dadId = "dad";
+        if (opponent != null && opponent.characterId != null) {
+            dadId = opponent.characterId;
+        } else if (currentStage._data != null && currentStage._data.characters != null && currentStage._data.characters.dad != null && currentStage._data.characters.dad.character != null) {
+            dadId = currentStage._data.characters.dad.character;
+        }
+
+        var gfId = "gf";
+        if (spectator != null && spectator.characterId != null) {
+            gfId = spectator.characterId;
+        } else if (currentStage._data != null && currentStage._data.characters != null && currentStage._data.characters.gf != null && currentStage._data.characters.gf.character != null) {
+            gfId = currentStage._data.characters.gf.character;
+        }
+
+        // Spawn characters only if they don't exist or need to change
+        if (player == null || player.characterId != bfId) {
+            if (player != null) player.destroy();
+            player = CharacterDataParser.fetchCharacter(bfId);
+            if (player != null) player.debug = true;
+        }
+
+        if (opponent == null || opponent.characterId != dadId) {
+            if (opponent != null) opponent.destroy();
+            opponent = CharacterDataParser.fetchCharacter(dadId);
+            if (opponent != null) opponent.debug = true;
+        }
+
+        if (spectator == null || spectator.characterId != gfId) {
+            if (spectator != null) spectator.destroy();
+            spectator = CharacterDataParser.fetchCharacter(gfId);
+            if (spectator != null) spectator.debug = true;
+        }
+        
+        var playerDropdown = stageDataWindow.findComponent("playerDropdown");
+        var opponentDropdown = stageDataWindow.findComponent("opponentDropdown");
+        var spectatorDropdown = stageDataWindow.findComponent("spectatorDropdown");
+
+        var finalBfId = (player != null && player.characterId != null) ? player.characterId : bfId;
+        var finalDadId = (opponent != null && opponent.characterId != null) ? opponent.characterId : dadId;
+        var finalGfId = (spectator != null && spectator.characterId != null) ? spectator.characterId : gfId;
+
+        if (playerDropdown != null) updateCharacterButton(playerDropdown, "Player", finalBfId);
+        if (opponentDropdown != null) updateCharacterButton(opponentDropdown, "Opponent", finalDadId);
+        if (spectatorDropdown != null) updateCharacterButton(spectatorDropdown, "Spectator", finalGfId);
+    }
+
+    function updateCharacterButton(btn, type:String, charId:String) {
+        if (btn == null) return;
+        var cData = CharacterDataParser.fetchCharacterData(charId);
+        if (cData == null) {
+            btn.text = "None";
+            btn.icon = null;
+            return;
+        }
+        var LIMIT = 6;
+        var cName = charId;
+        if (cData != null && cData.name != null) cName = cData.name;
+        var displayName = cName.length > LIMIT ? cName.substring(0, LIMIT) + '.' : cName;
+        btn.text = displayName;
+        
+        var iconAsset = CharacterDataParser.getCharPixelIconAsset(charId);
+        if (iconAsset != null) {
+            btn.icon = Variant.fromImageData(iconAsset);
+        } else {
+            var graphic = FlxG.bitmap.add(Paths.image('icons/icon-' + cData.healthIcon));
+            if (graphic == null || graphic.width < 50) graphic = FlxG.bitmap.add(Paths.image('icons/icon-face'));
+            if (graphic != null) {
+                var frames = (graphic.width == 450 || graphic.width / graphic.height == 3) ? 3 : 2;
+                var fw = graphic.width / frames;
+                var bmd = new BitmapData(Std.int(fw), graphic.height, true, 0x00000000);
+                bmd.copyPixels(graphic.bitmap, new Rectangle(0, 0, fw, graphic.height), new Point(0, 0));
+                btn.icon = Variant.fromImageData(bmd);
+            } else {
+                btn.icon = null;
+            }
+        }
     }
 
     var targetSpriteY = 0;
@@ -1546,11 +1717,11 @@ class StageEditorTheSecond extends MusicBeatState {
             var item = characterListView.dataSource.get(i);
             switch (item.text) {
                 case "Player":
-                    player.visible = item.visible;
+                    if (player != null) player.visible = item.visible;
                 case "Opponent":
-                    opponent.visible = item.visible;
+                    if (opponent != null) opponent.visible = item.visible;
                 case "Spectator":
-                    spectator.visible = item.visible;
+                    if (spectator != null) spectator.visible = item.visible;
             }
         }
 

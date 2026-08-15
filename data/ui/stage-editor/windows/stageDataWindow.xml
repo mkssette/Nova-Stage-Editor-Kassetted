@@ -1,18 +1,20 @@
-<window title="Simple Form" width="250" maximizable="false" minimizable="false" collapsable="false" closable="false">
+<window title="Simple Form" width="250" height="500" maximizable="false" minimizable="false" collapsable="false" closable="false">
     <window-title width="100%">
     </window-title>
+    <scrollview width="100%" height="100%" contentWidth="100%">
     <vbox width="100%">
-        <dropdown id="stageDropdown" text="Select Stage" width="100%" searchable="true" tooltip="Choose a stage.">
+        <dropdown id="stageDropdown" text="Select Stage" width="100%" searchable="true">
         </dropdown>
         
-        <dropdown id="playerDropdown" text="Select Player" width="100%" searchable="true" tooltip="Choose a player.">
-        </dropdown>
-
-        <dropdown id="opponentDropdown" text="Select Opponent" width="100%" searchable="true" tooltip="Choose an opponent.">
-        </dropdown>
-
-        <dropdown id="spectatorDropdown" text="Select Spectator" width="100%" searchable="true" tooltip="Choose a spectator.">
-        </dropdown>
+        <grid columns="3" width="100%" style="spacing: 4px;" horizontalAlign="center">
+            <label text="Player" textAlign="center" width="100%" style="font-size: 11px;" />
+            <label text="Opponent" textAlign="center" width="100%" style="font-size: 11px;" />
+            <label text="Spectator" textAlign="center" width="100%" style="font-size: 11px;" />
+            
+            <button id="playerDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
+            <button id="opponentDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
+            <button id="spectatorDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
+        </grid>
     </vbox>
 
     <grid width="100%">
@@ -59,5 +61,5 @@
     </vbox>
 
     <button id="editCharacterButton" text="Edit Selected Character" width="100%"/>
-    
+    </scrollview>
 </window>
