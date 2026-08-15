@@ -1751,7 +1751,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         iTime += elapsed;
 
-        if (FlxG.keys.pressed.SPACE && !cancelInput) {
+        if (FlxG.keys.pressed.SPACE && !cancelInput && draggingHandle == null) {
             Cursor.cursorMode = FlxG.mouse.pressed ? CursorMode.Grabbing : CursorMode.Pointer;
             if (FlxG.mouse.pressed) {
                 camGame.scroll.x -= FlxG.mouse.deltaX / camGame.zoom;
@@ -2043,6 +2043,8 @@ class StageEditorTheSecond extends MusicBeatState {
         var baseW = selectedProp.width / selectedProp.scale.x;
         var baseH = selectedProp.height / selectedProp.scale.y;
 
+        var cancelInput = this.cancelInput || FlxG.keys.pressed.SPACE;
+
         var applyScale = function(sdx:Float, sdy:Float, anchorX:Float, anchorY:Float, isCorner:Bool) {
             var alt = FlxG.keys.pressed.ALT;
             var shift = FlxG.keys.pressed.SHIFT;
@@ -2180,9 +2182,9 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
                 cC.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
 
-                if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.justPressed && !cancelInput) draggingHandle = "cC";
+                if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.justPressed && !cancelInput && !FlxG.keys.pressed.SPACE) draggingHandle = "cC";
 
-                if ((FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput) || (draggingHandle == "cC" && FlxG.mouse.pressed && !cancelInput)) {
+                if ((FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed && draggingHandle == null && !cancelInput && !FlxG.keys.pressed.SPACE) || (draggingHandle == "cC" && FlxG.mouse.pressed && !cancelInput && !FlxG.keys.pressed.SPACE)) {
                     draggingHandle = "cC";
                     selectedProp.x += mouseDeltaX;
                     selectedProp.y += mouseDeltaY;
