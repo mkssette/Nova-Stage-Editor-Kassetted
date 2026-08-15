@@ -336,9 +336,7 @@ class StageEditorTheSecond extends MusicBeatState {
         precacheCharsSave = SaveUtil.getFromSave('nova-editors', 'precacheChars');
         precacheStagesSave = SaveUtil.getFromSave('nova-editors', 'precacheStages');
 
-		FunkinSound.playMusic(editorSongSave.key, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 
-		
 
         camBackground = new FlxCamera();
         camBackground.bgColor = 0xFF000000;
@@ -1548,6 +1546,10 @@ class StageEditorTheSecond extends MusicBeatState {
         cC = getCornerCircle(true);
         cC.cameras = [camInteract];
         add(cC);
+
+        new FlxTimer().start(0.1, (tmr)->{
+            FunkinSound.playMusic(editorSongSave.key, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+        });
     }
 
     function reloadStage() {
