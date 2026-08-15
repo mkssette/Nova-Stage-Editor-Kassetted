@@ -1,0 +1,51 @@
+import flixel.FlxG;
+import Reflect;
+
+class StageEditorInput {
+    public static function init(state:Dynamic) {
+        state.newKeybind(["W"], function(elapsed) {
+            if (!FlxG.mouse.overlaps(state.stageDataWindow) && !state.cancelInput) {
+                state.camGame.scroll.y -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75;
+            }
+        }, "pressed");
+
+        state.newKeybind(["A"], function(elapsed) {
+            if (!FlxG.mouse.overlaps(state.stageDataWindow) && !state.cancelInput) {
+                state.camGame.scroll.x -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75;
+            }
+        }, "pressed");
+
+        state.newKeybind(["S"], function(elapsed) {
+            if (!FlxG.mouse.overlaps(state.stageDataWindow) && !state.cancelInput) {
+                state.camGame.scroll.y += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75;
+            }
+        }, "pressed");
+
+        state.newKeybind(["D"], function(elapsed) {
+            if (!FlxG.mouse.overlaps(state.stageDataWindow) && !state.cancelInput) {
+                state.camGame.scroll.x += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75;
+            }
+        }, "pressed");
+
+        state.newKeybind(["Q"], function(elapsed) {
+            if (!state.cancelInput && !FlxG.keys.pressed.CONTROL && !FlxG.mouse.overlaps(state.stageDataWindow)) {
+                state.camGame.zoom -= (0.015 * elapsed) * 100;
+            }
+        }, "pressed");
+
+        state.newKeybind(["E"], function(elapsed) {
+            if (!state.cancelInput && !FlxG.keys.pressed.CONTROL && !FlxG.mouse.overlaps(state.stageDataWindow)) {
+                state.camGame.zoom += (0.015 * elapsed) * 100;
+            }
+        }, "pressed");
+
+        state.newKeybind(["CONTROL", "E"], function(elapsed) {
+            state.camHUD.visible = !state.camHUD.visible;
+        });
+        
+        state.newKeybind(["ESCAPE"],  function() {
+            state.deselectStage();
+            state.deselectChars();
+        });
+    }
+}

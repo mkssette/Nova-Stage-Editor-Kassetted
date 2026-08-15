@@ -27,7 +27,7 @@
         <box text="Guide">
             <vbox width="100%">
                 <label
-                    text="Welcome to the User Guide for the Nova Stage Editor! In the \nUser Guide you'll be able to learn basic use and functionality \nof the Stage Editor. Not only that but you'll also find useful \ntips and tricks you can use while creating/editing stages."
+                    text="Welcome to the User Guide for the Nova Stage Editor Kassetted! In the \nUser Guide you'll be able to learn basic use and functionality \nof the Stage Editor. Not only that but you'll also find useful \ntips and tricks you can use while creating/editing stages."
                     style="padding: 2px;" verticalAlign="center" />
                 <spacer height="10" />
                 <label text="To get started, click on one of the taps at the top of window!"

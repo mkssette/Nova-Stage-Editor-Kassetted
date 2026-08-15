@@ -28,7 +28,7 @@ class DebugMenuInjection extends Module
         if (Std.isOfType(event.targetState, DebugMenuSubState))
         {   
             var state = event.targetState;
-            state.createItem("Nova Stage Editor", openUnlockState);
+            state.createItem("Nova Stage Editor Kassetted", openUnlockState);
         }
     }
 

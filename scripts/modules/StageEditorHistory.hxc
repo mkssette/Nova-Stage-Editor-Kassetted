@@ -1,0 +1,136 @@
+import flixel.FlxG;
+import Reflect;
+
+class StageEditorHistory {
+    public static function compareData(a:Dynamic, b:Dynamic):Bool {
+        var same = true;
+        if (a != null && b != null) {
+            var index = 0;
+            for (i in a) {
+                var e = b[index];
+                if (i != null && e != null) {
+                    same = i.name != e.name ? false : same;
+                    same = i.position[0] != e.position[0] ? false : same;
+                    same = i.position[1] != e.position[1] ? false : same;
+                    same = i.scale[0] != e.scale[0] ? false : same;
+                    same = i.scale[1] != e.scale[1] ? false : same;
+                    same = i.alpha != e.alpha ? false : same;
+                    same = i.angle != e.angle ? false : same;
+                    same = i.blend != e.blend ? false : same;
+                    same = i.color != e.color ? false : same;
+                    same = i.flipX != e.flipX ? false : same;
+                    same = i.flipY != e.flipY ? false : same;
+                    same = i.zIndex != e.zIndex ? false : same;
+                }
+                index++;
+            }
+        } else {
+            same = false;
+        }
+        return same;
+    }
+
+    public static function redoCallback(state:Dynamic) {
+        if (state.cancelInput) return;
+        if (state.redoHistory.length - 1 >= 0) {
+            var data = [];
+            for (i in state.currentStage.members) {
+                if (i != null && i.name != null) {
+                    data.push({
+                        name: i.name,
+                        position: [i.x, i.y],
+                        scale: [i.scale.x, i.scale.y],
+                        alpha: i.alpha,
+                        angle: i.angle,
+                        blend: i.blend,
+                        color: i.color,
+                        flipX: i.flipX,
+                        flipY: i.flipY,
+                        zIndex: i.zIndex
+                    });
+                }
+            }
+            if (!compareData(state.history[state.history.length-1], data))
+                state.history.push(Reflect.copy(data));
+            var cur = state.redoHistory.pop();
+            for (i in cur) {
+                for (member in state.currentStage.members) {
+                    if (member != null && member.name == i.name) {
+                        member.x = i.position[0];
+                        member.y = i.position[1];
+                        member.scale.x = i.scale[0];
+                        member.scale.y = i.scale[1];
+                    }
+                }
+            }
+        }
+    }
+
+    public static function undoCallback(state:Dynamic) {
+        if (state.cancelInput) return;
+        if (state.history.length - 1 >= 0) {
+            var data = [];
+            for (i in state.currentStage.members) {
+                if (i != null && i.name != null) {
+                    data.push({
+                        name: i.name,
+                        position: [i.x, i.y],
+                        scale: [i.scale.x, i.scale.y],
+                        alpha: i.alpha,
+                        angle: i.angle,
+                        blend: i.blend,
+                        color: i.color,
+                        flipX: i.flipX,
+                        flipY: i.flipY,
+                        zIndex: i.zIndex
+                    });
+                }
+            }
+            if (!compareData(state.redoHistory[state.redoHistory.length-1], data))
+                state.redoHistory.push(Reflect.copy(data));
+            var cur = state.history.pop();
+            for (i in cur) {
+                for (member in state.currentStage.members) {
+                    if (member != null && member.name == i.name) {
+                        member.x = i.position[0];
+                        member.y = i.position[1];
+                        member.scale.x = i.scale[0];
+                        member.scale.y = i.scale[1];
+                    }
+                }
+            }
+        }
+    }
+
+    public static function updateHistory(state:Dynamic) {
+        if (FlxG.mouse.justPressed) {
+            state.redoHistory = [];
+            var data = [];
+            for (i in state.currentStage.members) {
+                if (i != null && i.name != null) {
+                    data.push({
+                        name: i.name,
+                        position: [i.x, i.y],
+                        scale: [i.scale.x, i.scale.y],
+                        alpha: i.alpha,
+                        angle: i.angle,
+                        blend: i.blend,
+                        color: i.color,
+                        flipX: i.flipX,
+                        flipY: i.flipY,
+                        zIndex: i.zIndex
+                    });
+                }
+            }
+            if (!compareData(state.history[state.history.length-1], data))
+                state.history.push(data);
+
+            if (state.history.length == 0)
+                state.history.push(data);
+
+            if (state.history.length > 50) {
+                state.history.shift();
+            }
+        }
+    }
+}
