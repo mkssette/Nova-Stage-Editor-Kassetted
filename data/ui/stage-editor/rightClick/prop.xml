@@ -1,6 +1,0 @@
-<menu text="Normal">
-    <menuitem id="edit" text="Edit Prop" />
-    <!-- <menuitem id="duplicate" text="Duplicate Prop" /> Is a WiP -->
-    <menuseparator />
-    <menuitem id="delete" text="Delete Prop" style="color: indianred" />
-</menu>
