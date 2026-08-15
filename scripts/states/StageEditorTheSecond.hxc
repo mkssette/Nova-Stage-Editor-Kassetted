@@ -48,6 +48,7 @@ import haxe.ui.containers.dialogs.Dialog;
 
 import haxe.ui.containers.windows.Window;
 import haxe.ui.containers.windows.WindowManager;
+import haxe.ui.focus.FocusManager;
 
 import haxe.ui.data.ArrayDataSource;
 
@@ -204,6 +205,7 @@ class StageEditorTheSecond extends MusicBeatState {
     var offsetTween:FlxTween;
 
     var editAnimationsWindow;
+    var userGuideWindow;
 
     var saveAsComponent;
 
@@ -220,10 +222,25 @@ class StageEditorTheSecond extends MusicBeatState {
     var yLine;
     var xLine;
 
-    var cancelInput = false;
+    var cancelInput(get, never):Bool;
+    function get_cancelInput():Bool {
+        var isMouseOverUI = false;
+        if (stageDataWindow != null && stageDataWindow.exists && stageDataWindow.cameras != null && FlxG.mouse.overlaps(stageDataWindow)) isMouseOverUI = true;
+        if (editCharacterWindow != null && editCharacterWindow.exists && editCharacterWindow.cameras != null && FlxG.mouse.overlaps(editCharacterWindow)) isMouseOverUI = true;
+        if (editPropWindow != null && editPropWindow.exists && editPropWindow.cameras != null && FlxG.mouse.overlaps(editPropWindow)) isMouseOverUI = true;
+        if (editAnimationsWindow != null && editAnimationsWindow.exists && editAnimationsWindow.cameras != null && FlxG.mouse.overlaps(editAnimationsWindow)) isMouseOverUI = true;
+        if (userGuideWindow != null && userGuideWindow.exists && userGuideWindow.cameras != null && FlxG.mouse.overlaps(userGuideWindow)) isMouseOverUI = true;
+        if (menuBar != null && menuBar.exists && menuBar.cameras != null && FlxG.mouse.overlaps(menuBar)) isMouseOverUI = true;
 
-    var deselectStage;
-    var deselectChars;
+        var hasFocus = false;
+        if (FocusManager.instance != null && FocusManager.instance.focus != null) {
+            hasFocus = true;
+        }
+
+        return isMouseOverUI || hasFocus;
+    }
+
+
 
     var doubleClickTween;
     var clickIndex = 0;
@@ -308,8 +325,7 @@ class StageEditorTheSecond extends MusicBeatState {
         precacheCharsSave = SaveUtil.getFromSave('nova-editors', 'precacheChars');
         precacheStagesSave = SaveUtil.getFromSave('nova-editors', 'precacheStages');
 
-		FunkinSound.playMusic(editorSongSave.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
-		FlxG.sound.music.fadeIn(0.5 , 0, 1);
+		FunkinSound.playMusic(editorSongSave.key, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 
 		
 
@@ -384,7 +400,7 @@ class StageEditorTheSecond extends MusicBeatState {
         resetCameraCallback = () -> FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
 
         bind(resetCamera, MouseEvent.CLICK, resetCameraCallback);
-        newKeybind(["CONTROL", "SHIFT", "R"], resetCameraCallback);
+        newKeybind(["CONTROL", "SHIFT", "R"], () -> { if (!cancelInput) resetCameraCallback(); });
 
         
         trace(precacheCharsSave);
@@ -409,6 +425,7 @@ class StageEditorTheSecond extends MusicBeatState {
         StageEditorFile.init(this);
         
         newKeybind(["CONTROL", "R"], ()->{
+            if (cancelInput) return;
             if (!FlxG.keys.pressed.SHIFT) {
                 currentStage.resetStage();
                 resetChars();
@@ -418,16 +435,13 @@ class StageEditorTheSecond extends MusicBeatState {
         
 
         var userGuideCallback = ()->{
-            if (cancelInput) return;
             userGuideWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/userGuideWindow"));
             userGuideWindow.windowManager = windowManager;
             add(userGuideWindow);
             userGuideWindow.screenCenter();
-            cancelInput = true;
 
             userGuideWindow.findComponent("closeButton").onClick = ()->{
                 windowManager.closeWindow(userGuideWindow);
-                cancelInput = false;
             }
 
             for (i in ["joinNovaButton", "joinNetworkButton"]) {
@@ -437,7 +451,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
         }
 
-        newKeybind(["F1"], userGuideCallback, "justPressed");
+        newKeybind(["F1"], () -> { if (!cancelInput) userGuideCallback(); }, "justPressed");
 
         bind(menuBar.findComponent("userGuide"), MouseEvent.CLICK, userGuideCallback);
 
@@ -503,7 +517,6 @@ class StageEditorTheSecond extends MusicBeatState {
             if (selectedProp == null) {
                 newNotification("Error!", "Please Select a Prop First.", NotificationType.Error);
             } else {
-                cancelInput = true;
 
                 
 
@@ -659,24 +672,27 @@ class StageEditorTheSecond extends MusicBeatState {
                 isPixelCheck.selected = !selectedProp.antialiasing;
                 isPixelCheck.onChange = ()->{
                     propData.isPixel = isPixelCheck.selected;
-                    selectedProp.antialiasing = !isPixelCheck.selected;
+            selectedProp.antialiasing = !isPixelCheck.selected;
                 }
 
                 var editAnimationButton = editPropWindow.findComponent("editPropWindowAnimationsButton");
                 editAnimationCallback = ()->{
-                    if (offsetTween != null)
-                        offsetTween.cancel();
                     if (!editAnimToggle) {
-                        
-                        editPropWindowOffset = -390;
+                        editAnimToggle = true;
+                        if (offsetTween != null) offsetTween.cancel();
+                        offsetTween = FlxTween.tween(editPropWindow, {x: editPropWindow.x - 390}, 0.5, { ease: FlxEase.quartOut });
 
                         editAnimationsWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
                         editAnimationsWindow.windowManager = windowManager;
                         add(editAnimationsWindow);
+                        
+                        editAnimationsWindow.x = editPropWindow.x - 390 + editPropWindow.width + 10;
+                        editAnimationsWindow.y = editPropWindow.y;
 
                         var editAnimationConfirmButton = editAnimationsWindow.findComponent("confirmButton");
                         bind(editAnimationConfirmButton, MouseEvent.CLICK, ()->{
-                            offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                            if (offsetTween != null) offsetTween.cancel();
+                            offsetTween = FlxTween.tween(editPropWindow, {x: editPropWindow.x + 390}, 0.5, { ease: FlxEase.quartOut });
                             windowManager.closeWindow(editAnimationsWindow);
                             editAnimToggle = false;
                             selectedProp.updateHitbox();
@@ -803,10 +819,11 @@ class StageEditorTheSecond extends MusicBeatState {
                             }
                         }
                     } else {
-                        offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                        if (offsetTween != null) offsetTween.cancel();
+                        offsetTween = FlxTween.tween(editPropWindow, {x: editPropWindow.x + 390}, 0.5, { ease: FlxEase.quartOut });
                         windowManager.closeWindow(editAnimationsWindow);
+                        editAnimToggle = false;
                     }
-                    editAnimToggle = !editAnimToggle;
                 }
                 bind(editAnimationButton, MouseEvent.CLICK, editAnimationCallback);
 
@@ -819,7 +836,6 @@ class StageEditorTheSecond extends MusicBeatState {
                         newNotification("Error!", '"Asset Path" must not be blank.', NotificationType.Error);
                     }
                     if (nameTextField.text != "" && assetPathTextField.text != "" && checkImageExists(assetPathTextField.text)) {
-                        cancelInput = false;
                         windowManager.closeWindow(editPropWindow);
                         if (editAnimationsWindow != null)
                             windowManager.closeWindow(editAnimationsWindow);
@@ -902,44 +918,7 @@ class StageEditorTheSecond extends MusicBeatState {
         propListView = stageDataWindow.findComponent("propsListView");
         characterListView = stageDataWindow.findComponent("charactersListView");
 
-        deselectStage = function(?target:Float) {
-            target ??= 1;
-            propListView.selectedItems = [];
-            propListView.selectedItem = null;
-            
-            
-            selectedProp = null;
-            var index = 0;
-            for (i in currentStage.members) {
-                var isProp = false;
-                for (prop in currentStage._data.props) {
-                    if (prop?.name == i?.name)
-                        isProp = true;
-                }
-                if (isProp) {
-                    
-                    i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
-                }
 
-                if (player != null)
-                    player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
-
-                if (opponent != null)
-                    opponent.alpha = (opponent._data.alpha ?? 1) * (target ?? 1);
-
-                if (spectator != null)
-                    spectator.alpha = (spectator._data.alpha ?? 1) * (target ?? 1);
-
-                index++;
-            }
-        };
-
-        deselectChars = ()->{
-            characterListView.selectedItems = [];
-            selectedCharacter = null;
-            selectedCharacterType = "none";
-            
-        };
 
         characterListView.onChange = characterListViewCallback = ()->{
             deselectStage(0.5);
@@ -1132,7 +1111,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }
 
             add(editCharacterWindow);
-            cancelInput = true;
+            editCharacterWindow.screenCenter();
 
             
             editCharacterWindow.findComponent("editCharaterWindowOpenEditor").disabled = !hasCharacterEditorInstalled;
@@ -1164,7 +1143,6 @@ class StageEditorTheSecond extends MusicBeatState {
 
             var editConfirmButton = editCharacterWindow.findComponent("editCharacterWindowConfirm");
             bind(editConfirmButton, MouseEvent.CLICK, ()->{
-                cancelInput = false;
                 windowManager.closeWindow(editCharacterWindow);
                 deselectStage();
                 
@@ -1406,7 +1384,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }, 0.25, { ease: FlxEase.quartOut });
         }
         menuBar.findComponent("viewFromPlayer").onClick = viewFromPlayerCallback;
-        newKeybind(["THREE"], viewFromPlayerCallback, "justPressed");
+        newKeybind(["THREE"], () -> { if (!cancelInput) viewFromPlayerCallback(); }, "justPressed");
 
         var viewFromOpponentCallback = ()->{
             FlxTween.cancelTweensOf(camGame.zoom);
@@ -1419,7 +1397,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         menuBar.findComponent("viewFromOpponent").onClick = viewFromOpponentCallback;
-        newKeybind(["ONE"], viewFromOpponentCallback, "justPressed");
+        newKeybind(["ONE"], () -> { if (!cancelInput) viewFromOpponentCallback(); }, "justPressed");
 
         var viewFromSpectatorCallback = ()->{
             FlxTween.cancelTweensOf(camGame.zoom);
@@ -1431,7 +1409,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         menuBar.findComponent("viewFromSpectator").onClick = viewFromSpectatorCallback;
-        newKeybind(["TWO"], viewFromSpectatorCallback, "justPressed");
+        newKeybind(["TWO"], () -> { if (!cancelInput) viewFromSpectatorCallback(); }, "justPressed");
 
         lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
         lL.cameras = [camInteract];
@@ -1583,22 +1561,9 @@ class StageEditorTheSecond extends MusicBeatState {
         
 
         
-        stageDataWindow.disabled = cancelInput;
 
-        if (menuBar != null)
-            menuBar.disabled = cancelInput;
 
-        if (editCharacterWindow != null)
-            editCharacterWindow.screenCenter();
-
-        if (editPropWindow != null) {
-            editPropWindow.screenCenter();
-            editPropWindow.x += editPropWindowOffset;
-        }
-
-        if (editAnimationsWindow != null) {
-            editAnimationsWindow.screenCenter();
-            editAnimationsWindow.x += 90;
+        if (editAnimationsWindow != null && editPropWindow != null) {
             editAnimationsWindow.height = editPropWindow.height;
         }
 
@@ -2336,4 +2301,47 @@ class StageEditorTheSecond extends MusicBeatState {
         super.onFocus(e);
         focusTimer = 2;
     } */
+    public function deselectStage(?target:Float) {
+        target ??= 1;
+        if (propListView != null) {
+            propListView.selectedItems = [];
+            propListView.selectedItem = null;
+        }
+        
+        selectedProp = null;
+        var index = 0;
+        if (currentStage != null && currentStage.members != null) {
+            for (i in currentStage.members) {
+                var isProp = false;
+                if (currentStage._data != null && currentStage._data.props != null) {
+                    for (prop in currentStage._data.props) {
+                        if (prop?.name == i?.name)
+                            isProp = true;
+                    }
+                }
+                if (isProp) {
+                    i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
+                }
+
+                if (player != null)
+                    player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
+
+                if (opponent != null)
+                    opponent.alpha = (opponent._data.alpha ?? 1) * (target ?? 1);
+
+                if (spectator != null)
+                    spectator.alpha = (spectator._data.alpha ?? 1) * (target ?? 1);
+
+                index++;
+            }
+        }
+    }
+
+    public function deselectChars() {
+        if (characterListView != null) {
+            characterListView.selectedItems = [];
+        }
+        selectedCharacter = null;
+        selectedCharacterType = "none";
+    }
 }
