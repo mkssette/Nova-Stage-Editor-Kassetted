@@ -11,10 +11,13 @@ import funkin.play.stage.Stage;
 import openfl.display.BitmapData;
 import openfl.geom.Rectangle;
 import openfl.geom.Point;
+import openfl.Assets;
 
 import haxe.ui.RuntimeComponentBuilder;
 
 import flixel.FlxCamera;
+import flixel.graphics.FlxGraphic;
+import flixel.graphics.frames.FlxImageFrame;
 
 import haxe.ui.util.Variant;
 import haxe.ui.core.Screen;
@@ -1636,7 +1639,8 @@ class StageEditorTheSecond extends MusicBeatState {
 
     function updateCharacterButton(btn, type:String, charId:String) {
         if (btn == null) return;
-        var cData = CharacterDataParser.fetchCharacterData(charId);
+        var cData = CharacterDataParser.characterCache.get(charId);
+        if (cData == null) cData = CharacterDataParser.fetchCharacterData(charId);
         if (cData == null) {
             btn.text = "None";
             btn.icon = null;
@@ -1649,18 +1653,46 @@ class StageEditorTheSecond extends MusicBeatState {
         btn.text = displayName;
         
         var iconAsset = CharacterDataParser.getCharPixelIconAsset(charId);
+        trace('[ICON] charId=$charId | pixelIcon=${iconAsset != null}');
         if (iconAsset != null) {
-            btn.icon = Variant.fromImageData(iconAsset);
-        } else {
-            var graphic = FlxG.bitmap.add(Paths.image('icons/icon-' + cData.healthIcon));
-            if (graphic == null || graphic.width < 50) graphic = FlxG.bitmap.add(Paths.image('icons/icon-face'));
-            if (graphic != null) {
-                var frames = (graphic.width == 450 || graphic.width / graphic.height == 3) ? 3 : 2;
-                var fw = graphic.width / frames;
-                var bmd = new BitmapData(Std.int(fw), graphic.height, true, 0x00000000);
-                bmd.copyPixels(graphic.bitmap, new Rectangle(0, 0, fw, graphic.height), new Point(0, 0));
-                btn.icon = Variant.fromImageData(bmd);
+            var imageGraphic = FlxGraphic.fromFrame(iconAsset);
+            trace('[ICON] imageGraphic=${imageGraphic != null} | bitmap=${imageGraphic != null && imageGraphic.bitmap != null}');
+            if (imageGraphic != null) {
+                var imageFrame = FlxImageFrame.fromImage(imageGraphic);
+                var finalFrame = imageFrame != null ? imageFrame.frame : null;
+                trace('[ICON] finalFrame=${finalFrame != null}');
+                if (finalFrame != null) {
+                    btn.icon = Variant.fromImageData(finalFrame);
+                } else {
+                    btn.icon = null;
+                }
             } else {
+                btn.icon = null;
+            }
+        } else {
+            var iconPath = Paths.image('icons/icon-' + cData.healthIcon);
+            trace('[ICON] healthIcon=${cData.healthIcon} | path=$iconPath');
+            var bmd = null;
+            if (Assets.exists(iconPath)) {
+                bmd = Assets.getBitmapData(iconPath);
+                trace('[ICON] bmd loaded: ${bmd != null} | width=${bmd != null ? bmd.width : -1}');
+            } else {
+                trace('[ICON] icon path does NOT exist: $iconPath');
+            }
+            if (bmd == null || bmd.width < 50) {
+                var facePath = Paths.image('icons/icon-face');
+                trace('[ICON] fallback to icon-face: $facePath | exists=${Assets.exists(facePath)}');
+                if (Assets.exists(facePath)) bmd = Assets.getBitmapData(facePath);
+            }
+            if (bmd != null) {
+                var frames = (bmd.width == 450 || bmd.width / bmd.height == 3) ? 3 : 2;
+                var fw = bmd.width / frames;
+                trace('[ICON] cropping: frames=$frames fw=$fw');
+                var cropped = new BitmapData(Std.int(fw), bmd.height, true, 0x00000000);
+                cropped.copyPixels(bmd, new Rectangle(0, 0, fw, bmd.height), new Point(0, 0));
+                btn.icon = Variant.fromImageData(cropped);
+            } else {
+                trace('[ICON] no bmd found, icon set to null');
                 btn.icon = null;
             }
         }
