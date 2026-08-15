@@ -1,0 +1,42 @@
+import funkin.modding.module.Module;
+import funkin.graphics.FunkinSprite;
+import flixel.math.FlxRect;
+import flixel.math.FlxPoint;
+
+
+class CornerCalculation {
+
+    public static function calculate(sprite:FunkinSprite) {
+        sprite.updateHitbox();
+        var props = new CornerProperties();
+        
+        props.topLeftCorner.x = sprite.x;
+        props.topLeftCorner.y = sprite.y;
+        props.topRightCorner.x = sprite.x + sprite.width;
+        props.topRightCorner.y = sprite.y;
+
+        props.bottomLeftCorner.x = sprite.x;
+        props.bottomLeftCorner.y = sprite.y + sprite.height;
+        props.bottomRightCorner.x = sprite.x + sprite.width;
+        props.bottomRightCorner.y = sprite.y + sprite.height;
+        
+        //trace(props);
+        return props;
+    }
+
+}
+
+class CornerProperties extends Module {
+    var topLeftCorner = {x: 0, y: 0};
+    var topRightCorner = {x: 0, y: 0};
+    var bottomLeftCorner = {x: 0, y: 0};
+    var bottomRightCorner = {x: 0, y: 0};
+
+    public static function new() {
+        super("CornerProperties");
+    }
+
+    override public function toString() {
+        return "\nEdgeProperties(\n\tCorners:\n\t tLC = [" + topLeftCorner.x + ", " + topLeftCorner.y + "], \n\t tRC = [" + topRightCorner.x + ", " + topRightCorner.y + "], \n\t bLC = [" + bottomLeftCorner.x + ", " + bottomLeftCorner.y + "], \n\t bRC = [" + bottomRightCorner.x + ", " + bottomRightCorner.y + "]\n)";
+    }
+}

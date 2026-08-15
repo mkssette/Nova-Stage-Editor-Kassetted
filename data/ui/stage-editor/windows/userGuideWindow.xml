@@ -1,0 +1,325 @@
+<window title="User Guide" width="500" height="600" maximizable="false" minimizable="false"
+    collapsable="false" closable="false">
+    <style>
+        .discord-card {
+        background: #313234;
+        border-radius: 10px;
+        }
+
+        .discord-button {
+        background: #00863a;
+        border: none;
+        border-radius: 15px;
+        color: white;
+        font-name:'fonts/gintoRegular.ttf';
+        }
+
+        .discord-button:hover {
+        background: #057834
+        }
+
+        .discord-button:down {
+        background: #02662c
+        }
+    </style>
+
+    <tabview id="tv2" width="100%" height="100%">
+        <box text="Guide">
+            <vbox width="100%">
+                <label
+                    text="Welcome to the User Guide for the Nova Stage Editor! In the \nUser Guide you'll be able to learn basic use and functionality \nof the Stage Editor. Not only that but you'll also find useful \ntips and tricks you can use while creating/editing stages."
+                    style="padding: 2px;" verticalAlign="center" />
+                <spacer height="10" />
+                <label text="To get started, click on one of the taps at the top of window!"
+                    style="padding: 2px;" verticalAlign="center" />
+                <spacer height="310" />
+                <label text="- GENZU" style="padding: 2px;" verticalAlign="center" />
+            </vbox>
+        </box>
+
+        <box text="Keybinds">
+            <tableview width="450" height="445" contentWidth="100%">
+                <header width="100%">
+                    <column id="action" text="Action" width="50%" />
+                    <column id="keybind" text="Keybind" width="50%" />
+                </header>
+                <data>
+                    <item action="Show User Guide" keybind="F1" />
+                    <item action="New Stage" keybind="Ctrl + N" />
+                    <item action="Save Stage" keybind="Ctrl + S" />
+                    <item action="Save Stage As" keybind="Ctrl + Shift + S" />
+                    <item action="Exit To Menu" keybind="Ctrl + Q" />
+
+                    <item action="Toggle HUD Visibilty" keybind="Ctrl + E" />
+
+                    <item action="Set Zoom to Stage Zoom" keybind="Ctrl + Shift + R" />
+
+                    <item action="Move Camera" keybind="W, A, S, D" />
+                    <item action="Zoom Camera" keybind="Q, E" />
+
+                    <item action="Deselect Prop/Character" keybind="Esc" />
+                    <item action="Deleted Selected Prop" keybind="Del" />
+                    <item action="Move Selected Prop/Character" keybind="Left Click + Drag" />
+
+                    <item action="Undo" keybind="Ctrl + Z" />
+                    <item action="Redo" keybind="Ctrl + Y" />
+                    
+                    <item action="View From Opponent" keybind="1" />
+                    <item action="View From Spectator" keybind="2" />
+                    <item action="View From Player" keybind="3" />
+
+                </data>
+            </tableview>
+        </box>
+
+        <box text="Credits">
+            <tableview width="450" height="445" contentWidth="100%">
+                <header width="100%">
+                    <column id="action" text="Name" width="50%" />
+                    <column id="keybind" text="Role" width="50%" />
+                </header>
+                <data>
+                    <item action="Nebula S. Nova" keybind="Main Coder, Lofi Freaky Menu" />
+                    <item action="GENZU" keybind="Coded The UI" />
+                </data>
+            </tableview>
+        </box>
+
+        <box text="Change Log">
+            <scroll-view width="449" height="445" contentWidth="100%">
+                <vbox>
+                    <frame text="v2.1.3" width="425">
+                        <vbox>
+                            <label text="—— Tweak ——" />
+                            <label text="• Reduced memory leakage by updating the transform tool." />
+                            <label text="• Updated Editor to use SaveUtil." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.1.2" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed transform tool causing memory leak every frame.\n  (Again)" />
+                            <label text="• Fixed the +/- text not hiding with HUD." />
+                            <label text="—— Tweak ——" />
+                            <label text="• Optimized HaxeUI for less memory leakage" />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.1.1" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed transform tool causing memory leak every frame." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.1.0" width="425">
+                        <vbox>
+                            <label text="—— Tweak ——" />
+                            <label text="• Made it so if cursor is over stage data window input\n  is cancelled." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.9" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed Is Default checkbox crashing if animation asset\n  path is filled in." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.8" width="425">
+                        <vbox>
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed changelog." />
+                            <label text="• Fixed potential crash related to onBeatHit." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+
+                    <frame text="v2.0.7" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added preferences tab." />
+                            <label text="• Added positive/negative markers for x and y lines." />
+                            <spacer />
+                            <label text="—— Fixes ——" />
+                            <label text="• Fixed Is Default crashing when changed in prop animation \n  list." />
+                            <label text="• Fixed game crashing when deleting the last prop in a \n  stage." />
+                            <spacer />
+                            <label text="—— Tweaks ——" />
+                            <label text="• Optimized transform tool." />
+                            <label text="• Made characters bop on beat." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.6" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added song choice saving." />
+                            <label text="• Added right click menu for props." />
+                            <label text="• Added X and Y line toggle to view menu." />
+                            <label text="• Added ability to move camera with mouse when prop is\n  selected by clicking outside of it." />
+                            <spacer />
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed lag when zooming." />
+                            <label text="• Fixed X and Y lines clipping when zooming." />
+                            <label text="• Fixed default prop animation not playing when changed." />
+                            <label text="• Fixed positions of characters being wrong when scaling." />
+                            <label text="• Fixed camera and objects snapping when clicking back \n  onto the game window." />
+                            <spacer />
+                            <label text="—— Tweaks ——" />
+                            <spacer />
+                            <label text="• Made Close/Apply not deselect the selected prop." />
+                            <label text="• Made Close/Apply not deselect the selected character." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.5" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Character Editor Integration inside of Edit Character\n  Window." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.4" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added View From Character in View tab." />
+                            <label text="• Added Show Character Camera Bounds in View tab." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.3" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added Undo/Redo history." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.2" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Added Prop Transform Tool." />
+                            <label text="• Added FAQ Tab in User Guide." />
+                            <spacer />
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed Camera Movement Being Framerate Dependent." />
+                            <spacer />
+                            <spacer />
+                            <label text="—— Tweaks ——" />
+                            <spacer />
+                            <label text="• Made Prop Scaling Use X AND Y Instead of Just 1 Value." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.1" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Changelog tab in User Guide window." />
+                            <spacer />
+                            <label text="—— Fixes ——" />
+                            <spacer />
+                            <label text="• Fixed Scaling Props Not Working." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                    <frame text="v2.0.0" width="425">
+                        <vbox>
+                            <label text="—— Additions ——" />
+                            <spacer />
+                            <label text="• Initial Release." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                </vbox>
+            </scroll-view>
+        </box>
+
+        <box text="To-Do">
+            <vbox>
+                <label text="—— To Be Added ——" />
+                <spacer />
+                <label text="• Editor Updating System." />
+                <label text="• Export to Psych/CNE." />
+            </vbox>
+        </box>
+
+        <box text="Discord">
+            <vbox>
+                <!-- tooltip="For more help with the editor join this server." -->
+                <!--  <label text="Nova Editor Server:"/>
+                <label text="https://discord.gg/MTMRYc63Dj"/> -->
+                <card width="450" styleName="discord-card">
+                    <vbox>
+                        <label text="Nova Utils Server"
+                            style="font-name:'fonts/gintoMedium.ttf';color: white;" />
+                        <box height="2" />
+                        <label text="For more help with the editor"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
+                        <label text="join this server!" style="font-name:'fonts/gintoRegular.ttf'" />
+                        <box height="2" />
+                        <button id="joinNovaButton" styleName="discord-button" width="420"
+                            text="Join" tooltip="https://discord.gg/MTMRYc63Dj"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
+                    </vbox>
+                </card>
+                <spacer height="3" />
+                <card width="450" styleName="discord-card">
+                    <vbox>
+                        <label text="V-Slice Network"
+                            style="font-name:'fonts/gintoMedium.ttf';color: white;" />
+                        <box height="2" />
+                        <label text="For help related to V-Slice Modding"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
+                        <label text="join this server!" style="font-name:'fonts/gintoRegular.ttf'" />
+                        <box height="2" />
+                        <button id="joinNetworkButton" styleName="discord-button" width="420"
+                            text="Join" tooltip="https://discord.gg/ca2Kb6kukm"
+                            style="font-name:'fonts/gintoRegular.ttf'" />
+                    </vbox>
+                </card>
+
+            </vbox>
+        </box>
+
+        <box text="FAQ">
+            <scroll-view width="449" height="445" contentWidth="100%">
+                <vbox>
+                    <frame text=" - General Troubleshooting - " width="435">
+                        <vbox>
+                            <label text=" • Make sure your mod has a valid '_polymod_meta.json'." />
+                        </vbox>
+                    </frame>
+                    <frame text=" - Stage Isn't Showing Up - " width="435">
+                        <vbox>
+                            <label text=" • The stage MUST be placed in the 'stages' folder inside of \n   'data' folder: 'data/stages/yourStage.json'." />
+                        </vbox>
+                    </frame>
+                    <frame text=" - Asset Path is Invalid - " width="435">
+                        <vbox>
+                            <label text=" • Images must be placed in either the 'images/' folder \n   or the 'shared/images/' folder." />
+                            <spacer />
+                            <label text=" • When typing the Asset Path make sure you are using \n   foward slashes: Use '/' NOT '\'." />
+                            <spacer />
+                            <label text=" • When typing the Asset Path you do NOT need to include \n   'images/' or 'shared/images/' as the editor does that \n   automatically." />
+                            <spacer />
+                        </vbox>
+                    </frame>
+                </vbox>
+            </scroll-view>
+        </box>
+    </tabview>
+    <window-footer width="100%">
+        <spacer width="100%" />
+        <button id="closeButton" text="Close" />
+    </window-footer>
+</window>

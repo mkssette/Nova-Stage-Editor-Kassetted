@@ -1,0 +1,2588 @@
+import flixel.math.FlxMath;
+
+import cpp.vm.Gc;
+
+import funkin.ui.MusicBeatState;
+
+import funkin.audio.FunkinSound;
+
+import funkin.play.stage.Stage;
+
+import haxe.ui.RuntimeComponentBuilder;
+
+import flixel.FlxCamera;
+
+import haxe.ui.core.Screen;
+import haxe.ui.core.Component;
+import haxe.ui.core.TextDisplay;
+
+import haxe.ui.components.Label;
+import haxe.ui.components.Button;
+import haxe.ui.components.TabBar;
+import haxe.ui.components.Column;
+import haxe.ui.components.DropDown;
+import haxe.ui.components.TextArea;
+import haxe.ui.components.CheckBox;
+import haxe.ui.components.TextField;
+import haxe.ui.components.NumberStepper;
+
+import haxe.ui.containers.Box;
+import haxe.ui.containers.HBox;
+import haxe.ui.containers.VBox;
+import haxe.ui.containers.Header;
+import haxe.ui.containers.TabView;
+import haxe.ui.containers.ListView;
+import haxe.ui.containers.TableView;
+import haxe.ui.containers.TableView;
+import haxe.ui.containers.ScrollView;
+import haxe.ui.containers.HorizontalSplitter;
+
+import haxe.ui.containers.menus.Menu;
+import haxe.ui.containers.menus.MenuBar;
+import haxe.ui.containers.menus.MenuItem;
+import haxe.ui.containers.menus.MenuCheckBox;
+import haxe.ui.containers.menus.MenuOptionBox;
+import haxe.ui.containers.menus.MenuSeparator;
+
+import haxe.ui.containers.dialogs.Dialog;
+
+import haxe.ui.containers.windows.Window;
+import haxe.ui.containers.windows.WindowManager;
+
+import haxe.ui.data.ArrayDataSource;
+
+import haxe.ui.macros.ComponentMacros;
+
+import funkin.input.Cursor;
+
+import funkin.ui.debug.charting.ChartEditorState;
+import funkin.ui.mainmenu.MainMenuState;
+
+import flixel.FlxG;
+
+import haxe.ui.notifications.NotificationManager;
+import haxe.ui.notifications.NotificationType;
+
+import funkin.graphics.FunkinSprite;
+
+import flixel.addons.display.shapes.FlxShapeCircle;
+import flixel.addons.display.shapes.FlxShapeBox;
+import flixel.addons.effects.chainable.FlxOutlineEffect;
+import flixel.addons.effects.chainable.FlxEffectSprite;
+
+import haxe.ui.events.MouseEvent;
+
+import funkin.modding.PolymodHandler;
+
+import funkin.play.character.CharacterDataParser;
+
+import funkin.util.SortUtil;
+import funkin.util.FileUtil;
+
+import funkin.data.stage.StageRegistry;
+
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+
+import flixel.util.FlxColor;
+import flixel.util.FlxTimer;
+
+import funkin.play.character.CharacterType;
+
+import flixel.addons.display.FlxRuntimeShader;
+
+import flixel.math.FlxAngle;
+import flixel.math.FlxPoint;
+
+import flixel.text.FlxText;
+
+import haxe.Json;
+
+import StringTools;
+import Reflect;
+import Math;
+
+import haxe.ds.Either;
+
+import funkin.modding.base.ScriptedFlxSpriteGroup;
+import funkin.modding.base.ScriptedMusicBeatState;
+
+import funkin.save.Save;
+
+import funkin.api.discord.DiscordClient;
+
+import haxe.ui.Toolkit;
+
+using StringTools;
+
+class StageEditorTheSecond extends MusicBeatState {
+
+    var np = [];
+
+    var discStageName;
+
+    var editorSongSave;
+    var precacheCharsSave;
+    var precacheStagesSave;
+
+    var history = [];
+    var redoHistory = [];
+
+    // var outlineShader = new FlxRuntimeShader(Assets.getText(Paths.frag("WhiteOutline")));
+
+    // -- box???? -- \\
+    var playerBoundingBox;
+    var opponentBoundingBox;
+    var spectatorBoundingBox;
+
+    // --  Lines  -- \\
+    var lL;
+    var tL;
+    var rL;
+    var bL;
+
+    // -- Edge Cs -- \\
+    var tLC;
+    var tMC;
+    var tRC;
+
+    var mLC;
+    var mRC;
+
+    var bLC;
+    var bMC;
+    var bRC;
+
+    // --  Other -- \\
+    var cC;
+    var rC;
+
+    var stageRegistry;
+    var customStageRegistry = [
+        "init" => {
+            curData: null,
+            ogData: null
+        }
+    ];
+
+    var player;
+    var opponent;
+    var spectator;
+
+    var menuBar;
+
+    var stageIdList = [];
+
+    var editorVersion = "???"; // Uses polymod meta now :D
+    var editorTitle = "Nova Stage Editor";
+    var editorFolder = "??";
+
+    var keybinds = [];
+
+    var notificationManager = new NotificationManager();
+	var windowManager = new WindowManager();
+
+	var camHUD:FlxCamera;
+	var camInteract:FlxCamera;
+	var camGame:FlxCamera;
+    var camBackground:FlxCamera;
+
+    var rightClickMenu;
+
+    var stageDataWindow;
+
+    var editCharacterWindow;
+
+    var editPropWindow;
+    var editPropWindowOffset = 0;
+    var editAnimToggle = false;
+    var offsetTween:FlxTween;
+
+    var editAnimationsWindow;
+
+    var saveAsComponent;
+
+    var propListView;
+    var characterListView;
+    var stageList;
+
+    var currentStage:Stage;
+
+    var selectedProp;
+    var selectedCharacter;
+    var selectedCharacterType = "none";
+
+    var yLine;
+    var xLine;
+
+    var cancelInput = false;
+
+    var deselectStage;
+    var deselectChars;
+
+    var doubleClickTween;
+    var clickIndex = 0;
+
+    var editAnimationCallback;
+
+    var hasCharacterEditorInstalled:Bool = false;
+
+    var blacklist = [
+        "Main Stage",
+        "Main Stage [Erect]",
+
+        "Spooky Mansion",
+        "Spooky Mansion [Erect]",
+
+        "Christmas Mall (Nice)",
+        "Christmas Mall (Naughty)",
+        "Christmas Mall (Nice) [Erect]",
+
+        "Limo Ride",
+        "Limo Ride [Erect]",
+
+        "Philly (Train)",
+        "Philly (Blazin')",
+        "Philly (Streets)",
+        "Philly (Train) [Erect]",
+        "Philly (Streets) [Erect]",
+
+        "School (Date)",
+        "School (Hate)",
+        "School (Date) [Pico]",
+        "School (Date) [Erect]",
+        "School (Hate) [Erect]",
+
+        "Tankman Battlefield",
+        "Tankman Battlefield [Erect]"
+    ];
+
+    /* -- Button Callbacks -- */
+    var editPropCallback;
+    var duplicatePropCallback;
+    var deletePropCallback;
+
+    var characterListViewCallback;
+    var propListViewCallback;
+
+    function new() {
+        super('StageEditorTheSecond');
+    }
+
+    function compareData(a, b) {
+        var same = true;
+        if (a != null && b != null) {
+            var index = 0;
+            for (i in a) {
+                var e = b[index];
+                // trace(i.name, e.name);
+                if (i != null && e != null) {
+                    same = i.name != e.name ? false : same;
+                    same = i.position[0] != e.position[0] ? false : same;
+                    same = i.position[1] != e.position[1] ? false : same;
+                    same = i.scale[0] != e.scale[0] ? false : same;
+                    same = i.scale[1] != e.scale[1] ? false : same;
+                    same = i.alpha != e.alpha ? false : same;
+                    same = i.angle != e.angle ? false : same;
+                    same = i.blend != e.blend ? false : same;
+                    same = i.color != e.color ? false : same;
+                    same = i.flipX != e.flipX ? false : same;
+                    same = i.flipY != e.flipY ? false : same;
+                    same = i.zIndex != e.zIndex ? false : same;
+                }
+                index++;
+            }
+        } else {
+            same = false;
+        }
+        return same;
+    }
+
+    function redoCallback() {
+        if (cancelInput) return;
+        if (redoHistory.length - 1 >= 0) {
+            var data = [];
+            for (i in currentStage.members) {
+                data.push({
+                    name: i.name,
+                    position: [i.x, i.y],
+                    scale: [i.scale.x, i.scale.y],
+                    alpha: i.alpha,
+                    angle: i.angle,
+                    blend: i.blend,
+                    color: i.color,
+                    flipX: i.flipX,
+                    flipY: i.flipY,
+                    zIndex: i.zIndex
+                });
+            }
+            if (!compareData(history[history.length-1], data))
+                history.push(Reflect.copy(data));
+            var cur = redoHistory.pop();
+            for (i in cur) {
+                for (member in currentStage.members) {
+                    if (member.name == i.name) {
+                        member.x = i.position[0];
+                        member.y = i.position[1];
+                        member.scale.x = i.scale[0];
+                        member.scale.y = i.scale[1];
+                    }
+                }
+            }
+        }
+    }
+
+    function undoCallback() {
+        if (cancelInput) return;
+        if (history.length - 1 >= 0) {
+            var data = [];
+            for (i in currentStage.members) {
+                data.push({
+                    name: i.name,
+                    position: [i.x, i.y],
+                    scale: [i.scale.x, i.scale.y],
+                    alpha: i.alpha,
+                    angle: i.angle,
+                    blend: i.blend,
+                    color: i.color,
+                    flipX: i.flipX,
+                    flipY: i.flipY,
+                    zIndex: i.zIndex
+                });
+            }
+            if (!compareData(redoHistory[redoHistory.length-1], data))
+                redoHistory.push(Reflect.copy(data));
+            var cur = history.pop();
+            for (i in cur) {
+                for (member in currentStage.members) {
+                    if (member.name == i.name) {
+                        member.x = i.position[0];
+                        member.y = i.position[1];
+                        member.scale.x = i.scale[0];
+                        member.scale.y = i.scale[1];
+                    }
+                }
+            }
+        }
+    }
+
+    function create() {
+        super.create();
+        Cursor.show();
+
+        var style = RuntimeComponentBuilder.build(Paths.ui("stage-editor/styles/main"));
+        add(style);
+
+        
+
+        
+
+        SaveUtil.createSave('nova-editors');
+
+        if (SaveUtil.getFromSave('nova-editors', 'editorSong') == null) {
+            SaveUtil.writeToSave('nova-editors', 'editorSong', {
+                title: "Artistic Expression",
+                key: "chartEditorLoop"
+            });
+        }
+
+        if (SaveUtil.getFromSave('nova-editors', 'precacheChars') == null) {
+            SaveUtil.writeToSave('nova-editors', 'precacheChars', true);
+        }
+
+        if (SaveUtil.getFromSave('nova-editors', 'precacheStages') == null) {
+            SaveUtil.writeToSave('nova-editors', 'precacheStages', true);
+        }
+
+        editorSongSave = SaveUtil.getFromSave('nova-editors', 'editorSong');
+        precacheCharsSave = SaveUtil.getFromSave('nova-editors', 'precacheChars');
+        precacheStagesSave = SaveUtil.getFromSave('nova-editors', 'precacheStages');
+
+		FunkinSound.playMusic(editorSongSave.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+		FlxG.sound.music.fadeIn(0.5 , 0, 1);
+
+		
+
+        camBackground = new FlxCamera();
+        camBackground.bgColor = 0xFF000000;
+        FlxG.cameras.add(camBackground, false);
+
+        camGame = new FlxCamera();
+        camGame.bgColor = 0x00000000;
+        FlxG.cameras.add(camGame, false);
+
+        camInteract = new FlxCamera();
+        camInteract.bgColor = 0x00000000;
+        FlxG.cameras.add(camInteract, false);
+
+        camHUD = new FlxCamera();
+        camHUD.bgColor = 0x00000000;
+        FlxG.cameras.add(camHUD, true);
+
+        trace("\n\n\n\n\n\n");
+        for (i in PolymodHandler.getAllMods()) {
+            if (i.title == editorTitle) {
+                editorFolder = i.id;
+                editorVersion = i.modVersion.version.join(".") + "-beta";
+            }
+            if (i.title == "Nova Character Editor") {
+                hasCharacterEditorInstalled = true;
+            }
+        }
+
+        var nameList = [];
+        var idList = [];
+        for (i in CharacterDataParser.characterCache.keys()) {
+            nameList.push(CharacterDataParser.characterCache.get(i).name);
+            if (precacheCharsSave) {
+                var c = CharacterDataParser.characterCache.get(i);
+                var assetsToLoad = [];
+                assetsToLoad.push(c.assetPath);
+                for (i in c.animations) {
+                    if (i.assetPath != null) {
+                        assetsToLoad.push(i.assetPath);
+                    }
+                }
+                for (i in assetsToLoad) {
+                    new FunkinSprite().loadGraphic(Paths.image(i));
+                }
+            }
+            idList.push(CharacterDataParser.characterCache.get(i).id);
+        }
+        nameList.sort(SortUtil.alphabetically);
+        idList.sort(SortUtil.alphabetically);
+
+        stageRegistry = new StageRegistry();
+        stageRegistry.loadEntries();
+
+        var bg = new FunkinSprite(0, 0).loadGraphic(Paths.image('menuDesat'));
+		bg.scrollFactor.set(0, 0);
+		bg.setGraphicSize(FlxG.width, FlxG.height);
+		bg.updateHitbox();
+		bg.screenCenter();
+		bg.alpha = 0.25;
+		bg.cameras = [camBackground];
+		add(bg);
+
+        menuBar = RuntimeComponentBuilder.build(Paths.ui("stage-editor/menubar"));
+        menuBar.findComponent("menuBarTitle").text = editorTitle + " v" + editorVersion;
+
+        
+
+        var resetCamera = menuBar.findComponent("resetCamera");
+
+        resetCameraCallback = () -> FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
+
+        bind(resetCamera, MouseEvent.CLICK, resetCameraCallback);
+        newKeybind(["CONTROL", "SHIFT", "R"], resetCameraCallback);
+
+        
+        trace(precacheCharsSave);
+        trace(precacheStagesSave);
+
+        menuBar.findComponent("precacheCharacters").selected = precacheCharsSave;
+        menuBar.findComponent("precacheCharacters").onChange = ()->{
+            precacheCharsSave = menuBar.findComponent("precacheCharacters").selected;
+            SaveUtil.writeToSave('nova-editors', 'precacheChars', precacheCharsSave);
+            trace("Precache Characters: " + precacheCharsSave);
+        }
+
+        menuBar.findComponent("precacheStages").selected = precacheStagesSave;
+        menuBar.findComponent("precacheStages").onChange = ()->{
+            precacheStagesSave = menuBar.findComponent("precacheStages").selected;
+            SaveUtil.writeToSave('nova-editors', 'precacheStages', precacheStagesSave);
+            trace("Precache Stages: " + precacheStagesSave);
+        }
+
+        add(menuBar);
+
+        var saveStageAsButton = menuBar.findComponent("saveStageAs");
+        var saveStageAsCallback = ()->{
+            var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/saveAsDialog"));
+            newStageDialog.screenCenter();
+            newStageDialog.showDialog(true);
+            cancelInput = true;
+
+            for (i in PolymodHandler.getAllMods()) {
+			    newStageDialog.findComponent("modFolderList").dataSource.add({ text: i.title + " (" + i.id + ")" });
+            }
+            newStageDialog.findComponent("modFolderList").selectedItem = { text: "None" };
+
+            var cancelButton = newStageDialog.findComponent("dialogCancel");
+            cancelButton.onClick = ()->{
+                cancelInput = false;
+                newStageDialog.hide();
+                newStageDialog.destroy();
+            }
+        }
+        bind(saveStageAsButton, MouseEvent.CLICK, saveStageAsCallback);
+        newKeybind(["CONTROL", "SHIFT", "S"], saveStageAsCallback);
+
+        var newStageButton = menuBar.findComponent("newStage");
+        var newStageCallback = ()->{
+
+            var newStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/newStageDialog"));
+            newStageDialog.screenCenter();
+            newStageDialog.showDialog(true);
+            cancelInput = true;
+
+            for (i in PolymodHandler.getAllMods()) {
+			    newStageDialog.findComponent("modFolderList").dataSource.add({ text: i.title + " (" + i.id + ")" });
+            }
+            newStageDialog.findComponent("modFolderList").selectedItem = { text: "None" };
+
+            var cancelButton = newStageDialog.findComponent("dialogCancel");
+            cancelButton.onClick = ()->{
+                cancelInput = false;
+                newStageDialog.hide();
+                newStageDialog.destroy();
+            }
+
+            var continueButton = newStageDialog.findComponent("dialogContinue");
+            continueButton.onClick = ()->{
+                var continu = true;
+                if (newStageDialog.findComponent("modFolderList").text == "None") {
+                    newNotification("Error!", 'Could not create stage!\nPlease select a mod folder first.', NotificationType.Error, 5000);
+                    continu = false;
+                } else if (newStageDialog.findComponent("stageNameField").text == "" || newStageDialog.findComponent("stageNameField").text == null) {
+                    newNotification("Error!", 'Could not create stage!\nStage Name must not be empty.', NotificationType.Error, 5000);
+                    continu = false;
+                } else if (newStageDialog.findComponent("fileNameField").text == "" || newStageDialog.findComponent("fileNameField").text == null) {
+                    newNotification("Error!", 'Could not create stage!\nFile Name must not be empty.', NotificationType.Error, 5000);
+                    continu = false;
+                }
+
+                if (continu) {
+                    for (i in PolymodHandler.getAllMods()) {
+				        if (i.title + " (" + i.id + ")" == newStageDialog.findComponent("modFolderList").text) {
+                            var path = "mods/" + i.id + "/data/stages/" + newStageDialog.findComponent("fileNameField").text + ".json";
+
+                            var stageToSave = new Stage("mainStage");
+                            stageToSave._data.directory = "Generated By: " + editorTitle + " v" + editorVersion;
+                            stageToSave._data.version = "1.0.0";
+                            stageToSave._data.cameraZoom = 1;
+                            stageToSave._data.characters.bf.position = [0, 0];
+                            stageToSave._data.characters.gf.position = [0, 0];
+                            stageToSave._data.characters.dad.position = [0, 0];
+                            stageToSave._data.characters.bf.cameraOffsets = [0, 0];
+                            stageToSave._data.characters.gf.cameraOffsets = [0, 0];
+                            stageToSave._data.characters.dad.cameraOffsets = [0, 0];
+                            stageToSave._data.props = [];
+                            stageToSave._data.name = newStageDialog.findComponent("stageNameField").text;
+
+                            var parsed = Json.parse(stageToSave._data.serialize());
+
+                            FileUtil.writeStringToPath(path, Json.stringify(parsed, null, "\t"));
+
+                            stageList.dataSource.add({ text: newStageDialog.findComponent("stageNameField").text, id: newStageDialog.findComponent("fileNameField").text });
+                            customStageRegistry.set(newStageDialog.findComponent("fileNameField").text, stageToSave._data);
+
+                            stageList.selectedItem = { text: newStageDialog.findComponent("stageNameField").text, id: newStageDialog.findComponent("fileNameField").text };
+
+                            newNotification("Success!", 'Successfully created stage "' + newStageDialog.findComponent("stageNameField").text + '"', NotificationType.Success, 5000);
+                        }
+                    }
+
+                    cancelInput = false;
+                    newStageDialog.hide();
+                    newStageDialog.destroy();   
+                }
+            }
+            trace("yo");
+        }
+        bind(newStageButton, MouseEvent.CLICK, newStageCallback);
+        newKeybind(["CONTROL", "N"], newStageCallback);
+
+        var deleteStageButton = menuBar.findComponent("deleteStage");
+        deleteStageButton.onClick = ()->{
+            if (currentStage.id == "mainStage") {
+                newNotification("Error!", 'Could not delete stage!\n"assets" folder is protected.', NotificationType.Error, 5000);
+                return;
+            }
+
+            var deleteStageCallback = ()->{
+                for (mod in PolymodHandler.getAllMods()) {
+                    if (FileUtil.directoryExists("mods/" + mod.id + "/data/stages/")) {
+                        if (FileUtil.readDir("mods/" + mod.id + "/data/stages/").contains(currentStage.id + ".json")) {
+                            var path = "mods/" + mod.id + "/data/stages/" + currentStage.id + ".json";
+                            FileUtil.deleteFile(path);
+
+                            newNotification("Success!", 'Successfully deleted stage "' + currentStage.stageName + '"', NotificationType.Success, 5000);
+
+                            blacklist.push(currentStage.stageName);
+
+                            new FlxTimer().start(0.1, ()->{
+                                reloadStageList();
+                                stageList.selectedItem = { text: "Main Stage", id: "mainStage" };
+                            });
+
+                        }
+                    }
+                }
+            }
+
+            if (FlxG.keys.pressed.SHIFT) {
+                deleteStageCallback();
+            } else {
+                var deleteStageDialog = RuntimeComponentBuilder.build(Paths.ui("stage-editor/dialogs/deleteStageDialog"));
+                
+                deleteStageDialog.screenCenter();
+                deleteStageDialog.showDialog(true);
+                cancelInput = true;
+
+                deleteStageDialog.findComponent("dialogContinue").color = 0xFFFF8888;
+                deleteStageDialog.findComponent("dialogContinue").onClick = ()->{
+                    cancelInput = false;
+                    deleteStageDialog.hide();
+                    deleteStageDialog.destroy();
+                    deleteStageCallback();
+                }
+
+                deleteStageDialog.findComponent("dialogCancel").color = 0xFFFF8888;
+                deleteStageDialog.findComponent("dialogCancel").onClick = ()->{
+                    cancelInput = false;
+                    deleteStageDialog.hide();
+                    deleteStageDialog.destroy();
+                }
+            }
+
+        }
+
+        var exit = ()->{
+            FlxG.switchState(new MainMenuState());
+            PolymodHandler.forceReloadAssets();
+		}
+
+        var exitToMenuItem = menuBar.findComponent("exitToMenu");
+        exitToMenuItem.onClick = exit;
+        newKeybind(["CONTROL", "Q"], exit);
+
+        saveAsComponent = menuBar.findComponent("saveStageAs");
+        
+
+        var saveStageComponent = menuBar.findComponent("saveStage");
+        var saveStageCallback = ()->{
+            if (FlxG.keys.pressed.SHIFT) return;
+            
+            if (currentStage.id == "mainStage") {
+                newNotification("Error!", 'Could not save stage!\n"assets" folder is protected.', NotificationType.Error, 5000);
+                return;
+            }
+		    for (mod in PolymodHandler.getAllMods()) {
+                if (FileUtil.directoryExists("mods/" + mod.id + "/data/stages/")) {
+                    if (FileUtil.readDir("mods/" + mod.id + "/data/stages/").contains(currentStage.id + ".json")) {
+                        var path = "mods/" + mod.id + "/data/stages/" + currentStage.id + ".json";
+		                FileUtil.deleteFile(path);
+                        var parsed = Json.parse(currentStage._data.serialize());
+                        parsed.directory = "Generated By: " + editorTitle + " v" + editorVersion;
+                        parsed.version = "1.0.0";
+		                FileUtil.writeStringToPath(path, Json.stringify(parsed, null, "\t"));
+
+                        newNotification("Success!", 'Successfully saved stage to "' + path + '"', NotificationType.Success, 5000);
+                        return;
+                    }
+                }
+            }
+        }
+        
+        bind(saveStageComponent, MouseEvent.CLICK, saveStageCallback);
+        newKeybind(["CONTROL", "S"], saveStageCallback);
+        newKeybind(["CONTROL", "R"], ()->{
+            if (!FlxG.keys.pressed.SHIFT) {
+                currentStage.resetStage();
+                resetChars();
+            }
+        });
+
+        
+
+        var userGuideCallback = ()->{
+            if (cancelInput) return;
+            userGuideWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/userGuideWindow"));
+            userGuideWindow.windowManager = windowManager;
+            add(userGuideWindow);
+            userGuideWindow.screenCenter();
+            cancelInput = true;
+
+            userGuideWindow.findComponent("closeButton").onClick = ()->{
+                windowManager.closeWindow(userGuideWindow);
+                cancelInput = false;
+            }
+
+            for (i in ["joinNovaButton", "joinNetworkButton"]) {
+                userGuideWindow.findComponent(i).onClick = ()->{
+                    FlxG.openURL(userGuideWindow.findComponent(i).tooltip);
+                }
+            }
+        }
+
+        newKeybind(["F1"], userGuideCallback, "justPressed");
+
+        bind(menuBar.findComponent("userGuide"), MouseEvent.CLICK, userGuideCallback);
+
+        stageDataWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/stageDataWindow"));
+        stageDataWindow.screenCenter();
+        stageDataWindow.windowManager = windowManager;
+        add(stageDataWindow);
+
+        stageDataWindow.title = "Stage Data";
+        stageDataWindow.x = FlxG.width - stageDataWindow.width - 10;
+        stageDataWindow.y = menuBar.height + 10;
+
+        stageList = stageDataWindow.findComponent("stageDropdown");
+
+        reloadStageList();
+
+        var deletePropButton = stageDataWindow.findComponent("deletePropButton");
+        deletePropCallback = ()->{
+            if (selectedProp == null) return;
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    currentStage._data.props.remove(i);
+                }
+            }
+            deselectStage();
+            refreshPropList();
+            reloadStage();
+            resetChars();
+
+            propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
+            propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
+
+            new FlxTimer().start(0.05, ()->{
+                propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
+                propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
+            });
+        }
+        bind(deletePropButton, MouseEvent.CLICK, deletePropCallback);
+        newKeybind(["DELETE"], ()->{
+            if (!cancelInput)
+                deletePropCallback();
+        });
+
+
+        var newPropButton = stageDataWindow.findComponent("createPropButton");
+        var newPropCallback = ()->{
+            var proper = templateProp();
+            currentStage._data.props.push(proper);
+            refreshPropList();
+            reloadStage();
+            resetChars();
+
+            
+            propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
+            propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
+        }
+        bind(newPropButton, MouseEvent.CLICK, newPropCallback);
+        
+
+
+        var editPropButton = stageDataWindow.findComponent("editPropButton");
+        editPropCallback = ()->{
+            if (selectedProp == null) {
+                newNotification("Error!", "Please Select a Prop First.", NotificationType.Error);
+            } else {
+                cancelInput = true;
+
+                
+
+                var propData = getSelectedPropData();
+                
+
+                editPropWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropWindow"));
+                editPropWindow.screenCenter();
+                editPropWindow.title = editPropWindow.title.replace("$propID", '"' + propData.name + '"');
+                editPropWindow.windowManager = windowManager;
+                add(editPropWindow);
+
+                var nameTextField = editPropWindow.findComponent("editPropWindowNameTextField");
+                nameTextField.text = propData.name;
+
+                var assetPathTextField = editPropWindow.findComponent("editPropWindowAssetPathTextField");
+                assetPathTextField.text = propData.assetPath;
+
+                var colorPicker = editPropWindow.findComponent("editPropWindowColorPicker");
+                colorPicker.selectedItem = selectedProp.color;
+                colorPicker.onChange = ()->{
+                    selectedProp.color = colorPicker.selectedItem;
+                    propData.color = FlxColor.toWebString(colorPicker.selectedItem);
+                }
+
+                var animationTypeStepper = editPropWindow.findComponent("editPropWindowAnimationStepper");
+                animationTypeStepper.onChange = ()->{
+                    propData.animType = animationTypeStepper.selectedItem.data;
+                }
+
+
+                var blendModeDropdown = editPropWindow.findComponent("editPropWindowBlendModeDropdown");
+                var blends = [
+                    "" => { text: "None", data: "-1", id: "" },
+                    "add" => { text: "Add", data: "0", id: "" },
+                    "alpha" => { text: "Alpha", data: "1", id: "" },
+                    "darken" => { text: "Darken", data: "2", id: "" },
+                    "difference" => { text: "Difference", data: "3", id: "" },
+                    "erase" => { text: "Erase", data: "4", id: "" },
+                    "hardlight" => { text: "Hard Light", data: "5", id: "" },
+                    "invert" => { text: "Invert", data: "6", id: "" },
+                    "layer" => { text: "Layer", data: "7", id: "" },
+                    "lighten" => { text: "Lighten", data: "8", id: "" },
+                    "multiply" => { text: "Multiply", data: "9", id: "" },
+                    "normal" => { text: "Normal", data: "10", id: "" },
+                    "overlay" => { text: "Overlay", data: "11", id: "" },
+                    "screen" => { text: "Screen", data: "12", id: "" },
+                    "shader" => { text: "Shader", data: "13", id: "" },
+                    "subtract" => { text: "Subtract", data: "14", id: "" }
+                ];
+                var item = blends.get(propData.blend);
+                item.id = propData.blend;
+                blendModeDropdown.selectedItem = item;
+                blendModeDropdown.onChange = ()->{
+                    propData.blend = blendModeDropdown.selectedItem.id;
+                    selectedProp.blend = Std.parseInt(blendModeDropdown.selectedItem.data) != -1 ? Std.parseInt(blendModeDropdown.selectedItem.data) : null;
+                }
+
+                var xPosStepper = editPropWindow.findComponent("editPropWindowPosStepperX");
+                xPosStepper.pos = Math.round(selectedProp.x);
+                xPosStepper.onChange = ()->{
+                    propData.position[0] = xPosStepper.pos;
+                    selectedProp.x = xPosStepper.pos;
+                }
+
+                var yPosStepper = editPropWindow.findComponent("editPropWindowPosStepperY");
+                yPosStepper.pos = Math.round(selectedProp.y);
+                yPosStepper.onChange = ()->{
+                    propData.position[1] = yPosStepper.pos;
+                    selectedProp.y = yPosStepper.pos;
+                }
+
+                var xScrollPosStepper = editPropWindow.findComponent("editPropWindowScrollStepperX");
+                xScrollPosStepper.pos = selectedProp.scrollFactor.x;
+                xScrollPosStepper.onChange = ()->{
+                    propData.scroll[0] = xScrollPosStepper.pos;
+                    selectedProp.scrollFactor.x = xScrollPosStepper.pos;
+                }
+
+                var yScrollPosStepper = editPropWindow.findComponent("editPropWindowScrollStepperY");
+                yScrollPosStepper.pos = selectedProp.scrollFactor.y;
+                yScrollPosStepper.onChange = ()->{
+                    propData.scroll[1] = yScrollPosStepper.pos;
+                    selectedProp.scrollFactor.y = yScrollPosStepper.pos;
+                }
+
+                var scaleStepperX = editPropWindow.findComponent("editPropWindowScaleStepperX");
+                scaleStepperX.pos = selectedProp.scale.x;
+
+                var scaleStepperY = editPropWindow.findComponent("editPropWindowScaleStepperY");
+                scaleStepperY.pos = selectedProp.scale.y;
+
+                scaleStepperX.onChange = ()->{
+                    propData.scale = Either.Right([scaleStepperX.pos, scaleStepperY.pos]);
+                    selectedProp.scale.set(scaleStepperX.pos, scaleStepperY.pos);
+                    selectedProp.updateHitbox();
+                }
+
+                scaleStepperY.onChange = ()->{
+                    propData.scale = Either.Right([scaleStepperX.pos, scaleStepperY.pos]);
+                    selectedProp.scale.set(scaleStepperX.pos, scaleStepperY.pos);
+                    selectedProp.updateHitbox();
+                }
+
+                var alphaStepper = editPropWindow.findComponent("editPropWindowAlphaStepper");
+                alphaStepper.pos = selectedProp.alpha;
+                alphaStepper.onChange = ()->{
+                    propData.alpha = alphaStepper.pos;
+                    selectedProp.alpha = alphaStepper.pos;
+                }
+
+                var angleStepper = editPropWindow.findComponent("editPropWindowAngleStepper");
+                angleStepper.pos = selectedProp.angle;
+                angleStepper.onChange = ()->{
+                    if (angleStepper.pos == -1) {
+                        angleStepper.pos = 359;
+                    } else if (angleStepper.pos == 360) {
+                        angleStepper.pos = 0;
+                    }
+                    propData.angle = angleStepper.pos;
+                    selectedProp.angle = angleStepper.pos;
+                }
+
+                var danceEveryStepper = editPropWindow.findComponent("editPropWindowDanceStepper");
+                danceEveryStepper.pos = propData.danceEvery ?? 0;
+                danceEveryStepper.onChange = ()->{
+                    propData.danceEvery = danceEveryStepper.pos;
+                }
+
+                var zIndexStepper = editPropWindow.findComponent("editPropWindowZIndexStepper");
+                zIndexStepper.pos = selectedProp.zIndex;
+                zIndexStepper.onChange = ()->{
+                    propData.zIndex = zIndexStepper.pos;
+                    selectedProp.zIndex = zIndexStepper.pos;
+                    currentStage.refresh();
+                }
+
+                var flipXCheck = editPropWindow.findComponent("editPropWindowFlipXCheckbox");
+                flipXCheck.selected = selectedProp.flipX;
+                flipXCheck.onChange = ()->{
+                    propData.flipX = flipXCheck.selected;
+                    selectedProp.flipX = flipXCheck.selected;
+                }
+
+                var flipYCheck = editPropWindow.findComponent("editPropWindowFlipYCheckbox");
+                flipYCheck.selected = selectedProp.flipY;
+                flipYCheck.onChange = ()->{
+                    propData.flipY = flipYCheck.selected;
+                    selectedProp.flipY = flipYCheck.selected;
+                }
+
+                var isPixelCheck = editPropWindow.findComponent("editPropWindowIsPixelCheckbox");
+                isPixelCheck.selected = !selectedProp.antialiasing;
+                isPixelCheck.onChange = ()->{
+                    propData.isPixel = isPixelCheck.selected;
+                    selectedProp.antialiasing = !isPixelCheck.selected;
+                }
+
+                var editAnimationButton = editPropWindow.findComponent("editPropWindowAnimationsButton");
+                editAnimationCallback = ()->{
+                    if (offsetTween != null)
+                        offsetTween.cancel();
+                    if (!editAnimToggle) {
+                        
+                        editPropWindowOffset = -390;
+
+                        editAnimationsWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editPropAnimationWindow"));
+                        editAnimationsWindow.windowManager = windowManager;
+                        add(editAnimationsWindow);
+
+                        var editAnimationConfirmButton = editAnimationsWindow.findComponent("confirmButton");
+                        bind(editAnimationConfirmButton, MouseEvent.CLICK, ()->{
+                            offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                            windowManager.closeWindow(editAnimationsWindow);
+                            editAnimToggle = false;
+                            selectedProp.updateHitbox();
+                        });
+
+                        var acc1 = editAnimationsWindow.findComponent("ac1");
+
+                        var refreshAnimationList = ()->{
+
+                            var index = 0;
+                            for (i in getSelectedPropData().animations) {
+
+                                if (getSelectedPropData().startingAnimation == null && index == 0) {
+                                    getSelectedPropData().startingAnimation = i.name;
+                                }
+
+                                var animation = RuntimeComponentBuilder.build(Paths.ui("stage-editor/parts/animationPart"));
+                                animation.text = i.name;
+                                animation.id = i.name;
+
+                                var assetPathTextField = animation.findComponent("editAnimWindowAssetPathTextField");
+                                assetPathTextField.text = i.assetPath;
+                                assetPathTextField.onChange = ()->{
+                                    i.assetPath = assetPathTextField.text;
+                                    animation.text = i.assetPath;
+                                    
+                                }
+
+                                var nameTextField = animation.findComponent("editAnimWindowAnimNameTextField");
+                                nameTextField.text = i.name;
+                                nameTextField.onChange = ()->{
+                                    i.name = nameTextField.text;
+                                    animation.text = i.name;
+                                    animation.id = i.name;
+                                }
+
+                                var prefixTextField = animation.findComponent("editAnimWindowAnimPrefixTextField");
+                                prefixTextField.text = i.prefix;
+                                prefixTextField.onChange = ()->{
+                                    i.prefix = prefixTextField.text;
+                                }
+
+                                var frameIndicesTextField = animation.findComponent("editAnimWindowAnimIndicesTextField");
+                                frameIndicesTextField.text = i.frameIndices.join(", ");
+                                frameIndicesTextField.onChange = ()->{
+                                    frameIndicesTextField.text = frameIndicesTextField.text.replace("  ", " ");
+                                    frameIndicesTextField.text = frameIndicesTextField.text.replace(" ,", ",");
+                                    frameIndicesTextField.text = frameIndicesTextField.text.replace(",,", ",");
+                                    i.frameIndices = stringToIndices(frameIndicesTextField.text);
+                                    
+                                }
+
+                                var xOffsetStepper = animation.findComponent("editAnimWindowAnimOffsetXStepper");
+                                xOffsetStepper.pos = Math.round(i.offsets[0]);
+                                xOffsetStepper.onChange = ()->{
+                                    i.offsets[0] = xOffsetStepper.pos;
+                                }
+
+                                var yOffsetStepper = animation.findComponent("editAnimWindowAnimOffsetYStepper");
+                                yOffsetStepper.pos = Math.round(i.offsets[1]);
+                                yOffsetStepper.onChange = ()->{
+                                    i.offsets[1] = yOffsetStepper.pos;
+                                }
+
+                                var framerateStepper = animation.findComponent("editAnimWindowAnimFrameRateStepper");
+                                framerateStepper.pos = i.frameRate;
+                                framerateStepper.onChange = ()->{
+                                    i.frameRate = framerateStepper.pos;
+                                }
+
+                                var flipXCheck = animation.findComponent("editPropWindowFlipXCheckbox");
+                                flipXCheck.selected = i.flipX;
+                                flipXCheck.onChange = ()->{
+                                    i.flipX = flipXCheck.selected;
+                                }
+
+                                var flipYCheck = animation.findComponent("editPropWindowFlipYCheckbox");
+                                flipYCheck.selected = i.flipY;
+                                flipYCheck.onChange = ()->{
+                                    i.flipY = flipYCheck.selected;
+                                }
+
+                                var loopedCheck = animation.findComponent("editPropWindowLoopedCheckbox");
+                                loopedCheck.selected = i.looped;
+                                loopedCheck.onChange = ()->{
+                                    i.looped = loopedCheck.selected;
+                                }
+
+                                var isDefaultCheck = animation.findComponent("editPropWindowIsDefaultCheckbox");
+                                isDefaultCheck.selected = getSelectedPropData().startingAnimation == i.name;
+                                isDefaultCheck.onClick = ()->{
+                                    getSelectedPropData().startingAnimation = isDefaultCheck.selected ? i.name : null;
+                                    for (i2 in getSelectedPropData().animations) {
+                                        acc1.findComponent(i2.name).findComponent("editPropWindowIsDefaultCheckbox").selected = getSelectedPropData().startingAnimation == i2.name;
+                                    }
+                                    selectedProp.animation.play(getSelectedPropData().startingAnimation, true);
+                                }
+
+                                acc1.addComponent(animation);
+
+                                index++;
+                            }
+                        }
+                        refreshAnimationList();
+
+                        var newAnimationButton = editAnimationsWindow.findComponent("newAnimation");
+                        newAnimationButton.onClick = ()->{
+                            getSelectedPropData().animations.push(templateAnimation());
+                            windowManager.closeWindow(editAnimationsWindow);
+                            editAnimToggle = false;
+                            editAnimationCallback();
+                        }
+
+                        var deleteAnimationButton = editAnimationsWindow.findComponent("deleteAnimation");
+                        deleteAnimationButton.onClick = ()->{
+                            for (i in getSelectedPropData().animations) {
+                                if (i.name == acc1.selectedPage.id) {
+                                    getSelectedPropData().animations.remove(i);
+                                    windowManager.closeWindow(editAnimationsWindow);
+                                    editAnimToggle = false;
+                                    editAnimationCallback();
+
+                                }
+                            }
+                        }
+                    } else {
+                        offsetTween = FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                        windowManager.closeWindow(editAnimationsWindow);
+                    }
+                    editAnimToggle = !editAnimToggle;
+                }
+                bind(editAnimationButton, MouseEvent.CLICK, editAnimationCallback);
+
+                var editConfirmButton = editPropWindow.findComponent("editPropWindowConfirm");
+                bind(editConfirmButton, MouseEvent.CLICK, ()->{
+                    if (nameTextField.text == "") {
+                        newNotification("Error!", '"Prop Name" must not be blank.', NotificationType.Error);
+                    }
+                    if (assetPathTextField.text == "") {
+                        newNotification("Error!", '"Asset Path" must not be blank.', NotificationType.Error);
+                    }
+                    if (nameTextField.text != "" && assetPathTextField.text != "" && checkImageExists(assetPathTextField.text)) {
+                        cancelInput = false;
+                        windowManager.closeWindow(editPropWindow);
+                        if (editAnimationsWindow != null)
+                            windowManager.closeWindow(editAnimationsWindow);
+                        propData.name = nameTextField.text;
+                        propData.assetPath = assetPathTextField.text;
+                        reloadStage();
+                        
+                        deselectChars();
+                        refreshPropList();
+                        resetChars();
+                        editAnimToggle = false;
+                        FlxTween.num(editPropWindowOffset, 0, 1.0, { ease: FlxEase.quartOut }, function(num) { editPropWindowOffset = num; });
+                        propListViewCallback();
+                    } else if (!checkImageExists(assetPathTextField.text)) {
+                        FlxTween.color(assetPathTextField, 1.0, FlxColor.RED, FlxColor.WHITE);
+                        newNotification("Error!", '"Asset Path" is not valid.', NotificationType.Error);
+                    }
+                });
+            }
+        }
+        bind(editPropButton, MouseEvent.CLICK, editPropCallback);
+
+        var playerDropdown = stageDataWindow.findComponent("playerDropdown");
+        var opponentDropdown = stageDataWindow.findComponent("opponentDropdown");
+        var spectatorDropdown = stageDataWindow.findComponent("spectatorDropdown");
+        for (i in nameList) {
+            playerDropdown.dataSource.add({text: i});
+            opponentDropdown.dataSource.add({text: i});
+            spectatorDropdown.dataSource.add({text: i});
+        }
+
+        playerDropdown.onChange = ()->{
+            currentStage.getBoyfriend(true);
+            for (i in CharacterDataParser.characterCache.keys()) {
+                if (CharacterDataParser.characterCache.get(i).name == playerDropdown.selectedItem.text) {
+                    player = CharacterDataParser.fetchCharacter(i);
+                    player.debug = true;
+                    resetChars();
+                    break;
+                }
+            }
+            deselectChars();
+            deselectStage();
+            resetChars();
+        }
+
+        opponentDropdown.onChange = ()->{
+            currentStage.getDad(true);
+            for (i in CharacterDataParser.characterCache.keys()) {
+                if (CharacterDataParser.characterCache.get(i).name == opponentDropdown.selectedItem.text) {
+                    opponent = CharacterDataParser.fetchCharacter(i);
+                    opponent.debug = true;
+                    resetChars();
+                    break;
+                }
+            }
+            deselectChars();
+            deselectStage();
+            resetChars();
+        }
+
+        spectatorDropdown.onChange = ()->{
+            currentStage.getGirlfriend(true);
+            for (i in CharacterDataParser.characterCache.keys()) {
+                if (CharacterDataParser.characterCache.get(i).name == spectatorDropdown.selectedItem.text) {
+                    spectator = CharacterDataParser.fetchCharacter(i);
+                    spectator.debug = true;
+                    resetChars();
+                    break;
+                }
+            }
+            deselectChars();
+            deselectStage();
+            resetChars();
+        }
+
+
+        
+
+        propListView = stageDataWindow.findComponent("propsListView");
+        characterListView = stageDataWindow.findComponent("charactersListView");
+
+        deselectStage = function(?target:Float) {
+            target ??= 1;
+            propListView.selectedItems = [];
+            propListView.selectedItem = null;
+            
+            
+            selectedProp = null;
+            var index = 0;
+            for (i in currentStage.members) {
+                var isProp = false;
+                for (prop in currentStage._data.props) {
+                    if (prop?.name == i?.name)
+                        isProp = true;
+                }
+                if (isProp) {
+                    
+                    i?.alpha = target ?? currentStage?._data?.props[index]?.alpha ?? 1;
+                }
+
+                if (player != null)
+                    player.alpha = (player._data.alpha ?? 1) * (target ?? 1);
+
+                if (opponent != null)
+                    opponent.alpha = (opponent._data.alpha ?? 1) * (target ?? 1);
+
+                if (spectator != null)
+                    spectator.alpha = (spectator._data.alpha ?? 1) * (target ?? 1);
+
+                index++;
+            }
+        };
+
+        deselectChars = ()->{
+            characterListView.selectedItems = [];
+            selectedCharacter = null;
+            selectedCharacterType = "none";
+            
+        };
+
+        characterListView.onChange = characterListViewCallback = ()->{
+            deselectStage(0.5);
+            switch (characterListView.selectedItem.text) {
+                case "Player":
+                    if (player != null) {
+                        player.alpha = (player._data.alpha ?? 1);
+                        selectedCharacter = player;
+                        selectedCharacterType = "bf";
+                    } else {
+                        deselectChars();
+                        deselectStage();
+                    }
+                case "Opponent":
+                    if (opponent != null) {
+                        opponent.alpha = (opponent._data.alpha ?? 1);
+                        selectedCharacter = opponent;
+                        selectedCharacterType = "dad";
+                    } else {
+                        deselectChars();
+                        deselectStage();
+                    }
+                case "Spectator":
+                    if (spectator != null) {
+                        spectator.alpha = (spectator._data.alpha ?? 1);
+                        selectedCharacter = spectator;
+                        selectedCharacterType = "gf";
+                    } else {
+                        deselectChars();
+                        deselectStage();
+                    }
+            }
+        }
+
+        propListView.onClick = ()->{
+            clickIndex++;
+            if (doubleClickTween != null)
+                doubleClickTween.cancel();
+            doubleClickTween = new FlxTimer().start(0.25, ()->{
+                clickIndex = 0;
+            });
+            if (clickIndex == 2) {
+                if (selectedProp != null) {
+                    editPropCallback();
+                }
+            }
+        }
+
+        propListView.onChange = propListViewCallback = ()->{
+            
+            
+            
+            selectedProp = currentStage.getNamedProp(propListView.selectedItem.text);
+            
+
+            currentStage.forEachAlive((i)->{
+                if (i.name == opponent.name || i.name == player.name || i.name == spectator.name) {
+                    i.alpha = switch (i.name) {
+                        case player.name:
+                            currentStage._data.characters.bf?.alpha ?? 1;
+                        case opponent.name:
+                            currentStage._data.characters.dad?.alpha ?? 1;
+                        case spectator.name:
+                            currentStage._data.characters.gf?.alpha ?? 1;
+                    }
+                } else {
+                    i.alpha = getSelectedPropData().alpha;
+                }
+            });
+            deselectChars();
+            
+            
+            
+        }
+
+        newKeybind(["ESCAPE"],  ()->{
+            deselectStage();
+            deselectChars();
+        });
+
+        stageList.onChange = ()->{
+            if (stageList.selectedItem.id == null) return;
+            history = [];
+            redoHistory = [];
+            if (members.contains(currentStage)) {
+                remove(currentStage);
+            }
+            currentStage = new Stage('mainStage');
+            currentStage._cameras = [camGame];
+            currentStage.onCreate();
+            currentStage._data = customStageRegistry.get(stageList.selectedItem.id);
+            currentStage.id = stageList.selectedItem.id;
+            
+            reloadStage();
+            insert(0, currentStage);
+
+            refreshPropList();
+
+            stageDataWindow.findComponent("stageNameTextField").text = stageList.selectedItem.text;
+            stageDataWindow.findComponent("defualtCamZoomStepper").pos = currentStage.camZoom;
+            FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
+            FlxTween.tween(camGame.scroll, { x: -FlxG.width/2, y: -FlxG.height/2 }, 0.25, { ease: FlxEase.quartOut });
+            deselectStage();
+            deselectChars();
+            resetChars();
+        }
+
+        var stageNameTextField = stageDataWindow.findComponent("stageNameTextField");
+        stageNameTextField.onChange = ()->{
+            if (currentStage == null) return;
+
+            currentStage._data.name = stageNameTextField.text;
+            
+            stageList.text = stageNameTextField.text;
+            stageList.selectedItem.text = stageNameTextField.text;
+
+        }
+
+        var zoomStepper = stageDataWindow.findComponent("defualtCamZoomStepper");
+        zoomStepper.onChange = ()->{
+            if (currentStage == null) return;
+            currentStage._data.cameraZoom = zoomStepper.pos;
+            
+        }
+
+        stageList.selectedItem = { text: "Main Stage" };
+
+        
+        
+
+        initNotification();
+
+        newKeybind(["W"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.y -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["A"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.x -= ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["S"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.y += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+        newKeybind(["D"], (elapsed) -> !FlxG.mouse.overlaps(stageDataWindow) && !cancelInput ? camGame.scroll.x += ((FlxG.keys.pressed.SHIFT ? 10 : !FlxG.keys.pressed.CONTROL ? 5 : 0) * elapsed) * 75 : 0, "pressed");
+
+        newKeybind(["Q"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL && !FlxG.mouse.overlaps(stageDataWindow)) ? camGame.zoom -= (0.015 * elapsed) * 100 : 0, "pressed");
+        newKeybind(["E"], (elapsed) -> (!cancelInput && !FlxG.keys.pressed.CONTROL && !FlxG.mouse.overlaps(stageDataWindow)) ? camGame.zoom += (0.015 * elapsed) * 100 : 0, "pressed");
+
+        newKeybind(["CONTROL", "E"], ()->camHUD.visible = !camHUD.visible);
+
+        camGame.scroll.x = -FlxG.width/2;
+        camGame.scroll.y = -FlxG.height/2;
+
+
+        yLine = new FunkinSprite(0, 0).makeGraphic(1, 1, 0xFF00FF00);
+        yLine.scale.y = 2000;
+        yLine.antialiasing = true;
+        yLine.cameras = [camGame];
+        yLine.alpha = 0.5;
+        add(yLine);
+
+        xLine = new FunkinSprite(0, 0).makeGraphic(1, 1, 0xFFFF0000);
+        xLine.antialiasing = true;
+        xLine.cameras = [camGame];
+        xLine.alpha = 0.5;
+        add(xLine);
+
+        var index = 0;
+        for (i in ["(-x, -y)", "(+x, -y)", "(-x, +y)", "(+x, +y)"]) {
+            var negativePositive = new FlxText(0, 0, null, i);
+            negativePositive.antialiasing = false;
+            negativePositive.updateHitbox();
+            switch (index) {
+                case 0:
+                    negativePositive.x -= negativePositive.width;
+                    negativePositive.y -= negativePositive.height;
+                case 1:
+                    
+                    negativePositive.y -= negativePositive.height;
+                case 2:
+                    negativePositive.x -= negativePositive.width;
+                    
+                case 3:
+                    
+                    
+
+            }
+            negativePositive.cameras = [camGame];
+            np.push(negativePositive);
+            add(negativePositive);
+            index++;
+        }
+
+        var editCharacterButton = stageDataWindow.findComponent("editCharacterButton");
+        editCharacterButton.onClick = ()->{
+            if (selectedCharacter == null) {
+                newNotification("Error!", "Please Select a Character First.", NotificationType.Error);
+                return;
+            }
+            editCharacterWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/editCharacterWindow"));
+            editCharacterWindow.windowManager = windowManager;
+            editCharacterWindow.title = "Editing " + switch (selectedCharacterType) {
+                case "bf":
+                    "Player";
+                case "gf":
+                    "Spectator";
+                case "dad":
+                    "Opponent";
+            }
+
+            add(editCharacterWindow);
+            cancelInput = true;
+
+            
+            editCharacterWindow.findComponent("editCharaterWindowOpenEditor").disabled = !hasCharacterEditorInstalled;
+            if (!hasCharacterEditorInstalled) {
+                editCharacterWindow.findComponent("editorBox").tooltip = "Nova Character Editor is Not Installed";
+            } else {
+                editCharacterWindow.findComponent("editCharaterWindowOpenEditor").onClick = ()->{
+                    var char;
+                    switch (selectedCharacterType) {
+                        case "bf":
+                            char = player;
+                        case "gf":
+                            char = spectator;
+                        case "dad":
+                            char = opponent;
+                    }
+
+                    for (i in CharacterDataParser.characterCache.keys()) {
+                        if (CharacterDataParser.characterCache.get(i).name == char.name) {
+                            CharacterEditorV3.startingChar = { text: char.name, id: i, protected: false };
+                        }
+                    }
+
+                    CharacterEditorV3.skipPreloading = true;
+                    FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV3'));
+                }
+            }
+
+
+            var editConfirmButton = editCharacterWindow.findComponent("editCharacterWindowConfirm");
+            bind(editConfirmButton, MouseEvent.CLICK, ()->{
+                cancelInput = false;
+                windowManager.closeWindow(editCharacterWindow);
+                deselectStage();
+                
+                resetChars();
+                forceUpdateBounds = true;
+                characterListViewCallback();
+            });
+
+
+            var getCharData = ()->{
+                switch (selectedCharacterType) {
+                    case "bf":
+                        return currentStage._data.characters.bf;
+                    case "gf":
+                        return currentStage._data.characters.gf;
+                    case "dad":
+                        return currentStage._data.characters.dad;
+                }
+            }
+
+            xPosStepper = editCharacterWindow.findComponent("editCharacterWindowPosStepperX");
+            xPosStepper.pos = getCharData().position[0];
+            xPosStepper.onChange = ()->{
+                getCharData().position[0] = xPosStepper.pos;
+                resetChars();
+            }
+
+            yPosStepper = editCharacterWindow.findComponent("editCharacterWindowPosStepperY");
+            yPosStepper.pos = getCharData().position[1];
+            yPosStepper.onChange = ()->{
+                getCharData().position[1] = yPosStepper.pos;
+                resetChars();
+            }
+
+            xCamPosStepper = editCharacterWindow.findComponent("charCamOffsetX");
+            xCamPosStepper.pos = getCharData().cameraOffsets[0];
+            xCamPosStepper.onChange = ()->{
+                getCharData().cameraOffsets[0] = xCamPosStepper.pos;
+                resetChars();
+            }
+
+            yCamPosStepper = editCharacterWindow.findComponent("charCamOffsetY");
+            yCamPosStepper.pos = getCharData().cameraOffsets[1];
+            yCamPosStepper.onChange = ()->{
+                getCharData().cameraOffsets[1] = yCamPosStepper.pos;
+                resetChars();
+            }
+
+            xScrollPosStepper = editCharacterWindow.findComponent("editCharacterWindowScrollStepperX");
+            xScrollPosStepper.pos = getCharData().scroll[0];
+            xScrollPosStepper.onChange = ()->{
+                getCharData().scroll[0] = xScrollPosStepper.pos;
+                resetChars();
+            }
+
+            yScrollPosStepper = editCharacterWindow.findComponent("editCharacterWindowScrollStepperY");
+            yScrollPosStepper.pos = getCharData().scroll[1];
+            yScrollPosStepper.onChange = ()->{
+                getCharData().scroll[1] = yScrollPosStepper.pos;
+                resetChars();
+            }
+
+            scaleStepper = editCharacterWindow.findComponent("editCharacterWindowScaleStepper");
+            scaleStepper.pos = getCharData().scale;
+            scaleStepper.onChange = ()->{
+                getCharData().scale = scaleStepper.pos;
+                resetChars();
+            }
+
+            alphaStepper = editCharacterWindow.findComponent("editCharacterWindowAlphaStepper");
+            alphaStepper.pos = getCharData().alpha;
+            alphaStepper.onChange = ()->{
+                getCharData().alpha = alphaStepper.pos;
+                resetChars();
+            }
+
+            angleStepper = editCharacterWindow.findComponent("editCharacterWindowAngleStepper");
+            angleStepper.pos = getCharData().angle;
+            angleStepper.onChange = ()->{
+                getCharData().angle = angleStepper.pos;
+                resetChars();
+            }
+
+            zIndexStepper = editCharacterWindow.findComponent("editCharacterWindowZIndexStepper");
+            zIndexStepper.pos = getCharData().zIndex;
+            zIndexStepper.onChange = ()->{
+                getCharData().zIndex = zIndexStepper.pos;
+                resetChars();
+            }
+
+            visibleCheck = editCharacterWindow.findComponent("editCharacterWindowVisibleCheckbox");
+            visibleCheck.selected = switch (selectedCharacterType) {
+                case "bf":
+                    player.visible;
+                case "gf":
+                    spectator.visible;
+                case "dad":
+                    opponent.visible;
+            }
+            visibleCheck.onChange = ()->{
+                switch (selectedCharacterType) {
+                    case "bf":
+                        player.visible = visibleCheck.selected;
+                    case "gf":
+                        spectator.visible = visibleCheck.selected;
+                    case "dad":
+                        opponent.visible = visibleCheck.selected;
+                }
+                resetChars();
+            }
+        }
+
+        var musicSlider = menuBar.findComponent("menubarItemVolumeInstrumental");
+        musicSlider.onChange = ()->{
+            FlxG.sound.music.volume = musicSlider.pos/100;
+            menuBar.findComponent("editorMusicVolume").text = "Editor Music - " + Math.round(musicSlider.pos) + "%";
+        }
+
+        var musicMenu = menuBar.findComponent("musicMenu");
+        musicMenu.dataSource.add({text: "Freaky Menu", id: "freakyMenu"});
+
+        var folders = [
+            "assets/shared/music/",
+            "assets/music/"
+        ];
+        for (mod in PolymodHandler.getAllMods()) {
+            if (FileUtil.directoryExists("mods/" + mod.id + "/music/")) {
+                folders.push("mods/" + mod.id + "/music/");
+            }
+        }
+        for (folder in folders) {
+            for (file in FileUtil.readDir(folder)) {
+                if (file.endsWith(".ogg") || file == "credits" || file == "freakyMenu" || file == "gameplay") continue;
+                var name;
+                if (FileUtil.fileExists(folder + file + "/" + file + "-metadata.json")) {
+                    name = Json.parse(FileUtil.readStringFromPath(folder + file + "/" + file + "-metadata.json")).songName;
+                } else {
+                    name = file;
+                }
+                musicMenu.dataSource.add({text: name, id: file});
+                musicMenu.onChange = ()->{
+                    
+                    SaveUtil.writeToSave('nova-editors', 'editorSong', {
+                        title: musicMenu.selectedItem.text,
+                        key: musicMenu.selectedItem.id
+                    });
+
+                    FunkinSound.playMusic(musicMenu.selectedItem.id, {startingVolume: 1, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+
+                    
+                }
+                
+
+                
+            }
+        }
+
+        playerDropdown.selectedItem = { text: "Boyfriend" };
+        opponentDropdown.selectedItem = { text: "Daddy Dearest" };
+        spectatorDropdown.selectedItem = { text: "Girlfriend" };
+
+       
+
+        playerBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
+            thickness: 2,
+            color: FlxColor.BLUE,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, FlxColor.TRANSPARENT);
+        playerBoundingBox.cameras = [camGame];
+        playerBoundingBox.visible = false;
+        add(playerBoundingBox);
+
+        opponentBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
+            thickness: 2,
+            color: FlxColor.PURPLE,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, FlxColor.TRANSPARENT);
+        opponentBoundingBox.cameras = [camGame];
+        opponentBoundingBox.visible = false;
+        add(opponentBoundingBox);
+
+        spectatorBoundingBox = new FlxShapeBox(0, 0, 200, 200, {
+            thickness: 2,
+            color: FlxColor.RED,
+            pixelHinting: false,
+            scaleMode: null,
+            capsStyle: null,
+            jointStyle: null,
+            miterLimit: 200
+        }, FlxColor.TRANSPARENT);
+        spectatorBoundingBox.cameras = [camGame];
+        spectatorBoundingBox.visible = false;
+        add(spectatorBoundingBox);
+
+        menuBar.findComponent("showXYLines").selected = true;
+        menuBar.findComponent("showXYLines").onClick = ()->{
+            xLine.alpha = yLine.alpha = menuBar.findComponent("showXYLines").selected ? 0.5 : 0;
+        }
+
+        menuBar.findComponent("viewPlayerBounds").selected = false;
+        menuBar.findComponent("viewPlayerBounds").onClick = ()->{
+            playerBoundingBox.visible = menuBar.findComponent("viewPlayerBounds").selected;
+            new FlxTimer().start(0.05, ()->{
+                forceUpdateBounds = true;
+            });
+        };
+
+        menuBar.findComponent("viewOpponentBounds").selected = false;
+        menuBar.findComponent("viewOpponentBounds").onClick = ()->{
+            opponentBoundingBox.visible = menuBar.findComponent("viewOpponentBounds").selected;
+            new FlxTimer().start(0.05, ()->{
+                forceUpdateBounds = true;
+            });
+        };
+
+        menuBar.findComponent("viewSpectatorBounds").selected = false;
+        menuBar.findComponent("viewSpectatorBounds").onClick = ()->{
+            spectatorBoundingBox.visible = menuBar.findComponent("viewSpectatorBounds").selected;
+            new FlxTimer().start(0.05, ()->{
+                forceUpdateBounds = true;
+            });
+        };
+
+        var viewFromPlayerCallback = ()->{
+            FlxTween.cancelTweensOf(camGame.zoom);
+            FlxTween.cancelTweensOf(camGame.scroll);
+            resetCameraCallback();
+            FlxTween.tween(camGame.scroll, {
+                x: player.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.bf.cameraOffsets[0],
+                y: player.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.bf.cameraOffsets[1]
+            }, 0.25, { ease: FlxEase.quartOut });
+        }
+        menuBar.findComponent("viewFromPlayer").onClick = viewFromPlayerCallback;
+        newKeybind(["THREE"], viewFromPlayerCallback, "justPressed");
+
+        var viewFromOpponentCallback = ()->{
+            FlxTween.cancelTweensOf(camGame.zoom);
+            FlxTween.cancelTweensOf(camGame.scroll);
+            resetCameraCallback();
+            FlxTween.tween(camGame.scroll, {
+                x: opponent.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.dad.cameraOffsets[0],
+                y: opponent.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.dad.cameraOffsets[1]
+            }, 0.25, { ease: FlxEase.quartOut });
+        }
+
+        menuBar.findComponent("viewFromOpponent").onClick = viewFromOpponentCallback;
+        newKeybind(["ONE"], viewFromOpponentCallback, "justPressed");
+
+        var viewFromSpectatorCallback = ()->{
+            FlxTween.cancelTweensOf(camGame.zoom);
+            FlxTween.cancelTweensOf(camGame.scroll);
+            FlxTween.tween(camGame.scroll, {
+                x: spectator.cameraFocusPoint.x - (FlxG.width/2) + currentStage._data.characters.gf.cameraOffsets[0],
+                y: spectator.cameraFocusPoint.y - (FlxG.height/2) + currentStage._data.characters.gf.cameraOffsets[1]
+            }, 0.25, { ease: FlxEase.quartOut });
+        }
+
+        menuBar.findComponent("viewFromSpectator").onClick = viewFromSpectatorCallback;
+        newKeybind(["TWO"], viewFromSpectatorCallback, "justPressed");
+
+        lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        lL.cameras = [camInteract];
+        add(lL);
+
+        tL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        tL.cameras = [camInteract];
+        add(tL);
+
+        bL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        bL.cameras = [camInteract];
+        add(bL);
+
+        rL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
+        rL.cameras = [camInteract];
+        add(rL);
+
+        tLC = getCornerCircle(true);
+        tLC.cameras = [camInteract];
+        add(tLC);
+
+        tMC = getCornerCircle(true);
+        tMC.cameras = [camInteract];
+        add(tMC);
+
+        mLC = getCornerCircle(true);
+        mLC.cameras = [camInteract];
+        add(mLC);
+
+        tRC = getCornerCircle(true);
+        tRC.cameras = [camInteract];
+        add(tRC);
+
+        mRC = getCornerCircle(true);
+        mRC.cameras = [camInteract];
+        add(mRC);
+
+        bLC = getCornerCircle(true);
+        bLC.cameras = [camInteract];
+        add(bLC);
+
+        bRC = getCornerCircle(true);
+        bRC.cameras = [camInteract];
+        add(bRC);
+
+        bMC = getCornerCircle(true);
+        bMC.cameras = [camInteract];
+        add(bMC);
+
+        cC = getCornerCircle(true);
+        cC.cameras = [camInteract];
+        add(cC);
+    }
+
+    function reloadStage() {
+        var i = currentStage.members.length - 1;
+        while (i >= 0) {
+            var member = currentStage.members[i];
+            if (member != null) {
+                if (member == player || member == opponent || member == spectator) {
+                    currentStage.remove(member, true);
+                } else {
+                    member.destroy(); 
+                    currentStage.remove(member, true);
+                }
+            }
+            i--;
+        }
+
+        currentStage.buildStage();
+        
+        
+        for (i in currentStage._data.props) {
+            trace(i.scale);
+        }
+        
+        currentStage.refresh();
+
+        DiscordClient.setPresence({
+            details: editorTitle + " v" + editorVersion,
+            state: 'Editing a Stage: ' + currentStage.stageName,
+        });
+
+    }
+
+    var targetSpriteY = 0;
+
+    var mouseLock = {
+        x: 0,
+        y: 0
+    }
+
+    var forceUpdateBounds = false;
+
+    var focusTimer = 0;
+
+    var iTime = 0;
+
+    function update(elapsed) {
+        super.update(elapsed);
+
+        if (FlxG.mouse.justPressed && rightClickMenu != null && !FlxG.mouse.overlaps(rightClickMenu))
+		{
+			rightClickMenu.destroy();
+			rightClickMenu = null;
+		}
+
+        if (focusTimer > 0) {
+            focusTimer--;
+            return;
+        }
+
+        get_conductorInUse().update();
+
+        for (i in 0...propListView.dataSource.size) {
+            var item = propListView.dataSource.get(i);
+            if (currentStage.getNamedProp(item.text) == null) continue;
+            currentStage.getNamedProp(item.text).visible = item.visible;
+        }
+
+        if (FlxG.mouse.justPressed) {
+            redoHistory = [];
+            var data = [];
+            for (i in currentStage.members) {
+                if (i != null && i.name != null) {
+                    data.push({
+                        name: i.name,
+                        position: [i.x, i.y],
+                        scale: [i.scale.x, i.scale.y],
+                        alpha: i.alpha,
+                        angle: i.angle,
+                        blend: i.blend,
+                        color: i.color,
+                        flipX: i.flipX,
+                        flipY: i.flipY,
+                        zIndex: i.zIndex
+                    });
+                }
+            }
+            if (!compareData(history[history.length-1], data))
+                history.push(data);
+
+            if (history.length == 0)
+                history.push(data);
+
+            if (history.length > 50) {
+                history.shift();
+            }
+
+        }
+
+        if (FlxG.keys.pressed.CONTROL && FlxG.keys.justPressed.Y) redoCallback();
+        if (FlxG.keys.pressed.CONTROL && FlxG.keys.justPressed.Z) undoCallback();
+
+
+        for (i in 0...characterListView.dataSource.size) {
+            var item = characterListView.dataSource.get(i);
+            switch (item.text) {
+                case "Player":
+                    player.visible = item.visible;
+                case "Opponent":
+                    opponent.visible = item.visible;
+                case "Spectator":
+                    spectator.visible = item.visible;
+            }
+        }
+
+        iTime += elapsed;
+        
+
+
+        
+
+        
+        stageDataWindow.disabled = cancelInput;
+
+        if (menuBar != null)
+            menuBar.disabled = cancelInput;
+
+        if (editCharacterWindow != null)
+            editCharacterWindow.screenCenter();
+
+        if (editPropWindow != null) {
+            editPropWindow.screenCenter();
+            editPropWindow.x += editPropWindowOffset;
+        }
+
+        if (editAnimationsWindow != null) {
+            editAnimationsWindow.screenCenter();
+            editAnimationsWindow.x += 90;
+            editAnimationsWindow.height = editPropWindow.height;
+        }
+
+        if (FlxG.mouse.justPressed) {
+            FlxG.sound.play(Paths.sound("click"));
+            
+        }
+
+        for (keybind in keybinds) {
+            var pressed = true;
+            var index = 0;
+            
+            for (key in keybind.keys) {
+                if (index == keybind.keys.length - 1 && keybind.type != "pressed") {
+                    if (!Reflect.getProperty(FlxG.keys.justPressed, key)) {
+                        pressed = false;
+                    }
+                } else {
+                    if (!Reflect.getProperty(FlxG.keys.pressed, key)) {
+                        pressed = false;
+                    }
+                }
+                index++;
+            }
+            if (pressed) {
+                keybind.action(elapsed);
+            }
+        }
+
+        if (camGame.zoom < 0.01) {
+            camGame.zoom = 0.01;
+        }
+
+        updateTransformTool();
+
+        if (!cancelInput && (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) && selectedCharacter == null) {
+            if (FlxG.mouse.pressed && !FlxG.mouse.overlaps(stageDataWindow) && !FlxG.mouse.overlaps(menuBar)) {
+                camGame.scroll.x -= (FlxG.mouse.deltaX/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.x : 1);
+                camGame.scroll.y -= (FlxG.mouse.deltaY/camGame.zoom) / (selectedProp != null ? selectedProp.scrollFactor.y : 1);
+            }
+        }
+        if (!cancelInput) {
+            if (FlxG.mouse.wheel != 0 && !FlxG.mouse.overlaps(stageDataWindow)) {
+                camGame.zoom += FlxG.mouse.wheel/10;
+            }
+        }
+
+        var npIndex = 0;
+        for (negativePositive in np) {
+            negativePositive.x = 0;
+            negativePositive.y = 0;
+            negativePositive.alpha = camHUD.visible ? xLine.alpha : 0;
+            negativePositive.scale.set(2/camGame.zoom, 2/camGame.zoom);
+            negativePositive.antialiasing = false;
+            negativePositive.updateHitbox();
+            switch (npIndex) {
+                case 0:
+                    negativePositive.x -= negativePositive.width + (10/camGame.zoom);
+                    negativePositive.y -= negativePositive.height + (10/camGame.zoom);
+                case 1:
+                    negativePositive.x += (10/camGame.zoom);
+                    negativePositive.y -= negativePositive.height + (10/camGame.zoom);
+                case 2:
+                    negativePositive.x -= negativePositive.width + (10/camGame.zoom);
+                    negativePositive.y += (10/camGame.zoom);
+                case 3:
+                    negativePositive.x += (10/camGame.zoom);
+                    negativePositive.y += (10/camGame.zoom);
+            }
+            npIndex++;
+        }
+
+        if (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) updateTransformTool();
+
+        yLine.scale.x = 2 / camGame.zoom;
+        yLine.scale.y = FlxG.height * (1/camGame.zoom) * 2;
+        yLine.screenCenter();
+        yLine.updateHitbox();
+        yLine.x = -yLine.width/2;
+        yLine.scrollFactor.y = 0;
+        yLine.visible = camHUD.visible;
+
+        xLine.scale.y = 2 / camGame.zoom;
+        xLine.scale.x = FlxG.width * (1/camGame.zoom) * 2;
+        xLine.screenCenter();
+        xLine.updateHitbox();
+        xLine.y = -xLine.height/2;
+        xLine.scrollFactor.x = 0;
+        xLine.visible = camHUD.visible;
+
+        playerBoundingBox.alpha = opponentBoundingBox.alpha = spectatorBoundingBox.alpha = camHUD.visible ? (!FlxG.keys.pressed.Q && !FlxG.keys.pressed.E ? 1 : 0) : 0;
+
+        if ((!FlxG.keys.pressed.Q && !FlxG.keys.pressed.E) || forceUpdateBounds) {
+
+
+            
+
+            if ((playerBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) && playerBoundingBox.visible) {
+                playerBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+                playerBoundingBox.redrawShape();
+                playerBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+                playerBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+                playerBoundingBox.updateHitbox();
+                playerBoundingBox.x = player.cameraFocusPoint.x - (playerBoundingBox.width/2) + currentStage._data.characters.bf.cameraOffsets[0] + 2;
+                playerBoundingBox.y = player.cameraFocusPoint.y - (playerBoundingBox.height/2) + currentStage._data.characters.bf.cameraOffsets[1] + 2;
+            }
+
+            if ((opponentBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) && opponentBoundingBox.visible) {
+                opponentBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+                opponentBoundingBox.redrawShape();
+                opponentBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+                opponentBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+                opponentBoundingBox.updateHitbox();
+                opponentBoundingBox.x = opponent.cameraFocusPoint.x - (opponentBoundingBox.width/2) + currentStage._data.characters.dad.cameraOffsets[0] + 2;
+                opponentBoundingBox.y = opponent.cameraFocusPoint.y - (opponentBoundingBox.height/2) + currentStage._data.characters.dad.cameraOffsets[1] + 2;
+            }
+
+            if ((spectatorBoundingBox.lineStyle.thickness != 2 / camGame.zoom || forceUpdateBounds) && spectatorBoundingBox.visible) {
+                spectatorBoundingBox.lineStyle.thickness = 2 / camGame.zoom;
+                spectatorBoundingBox.redrawShape();
+                spectatorBoundingBox.shapeWidth = FlxG.width / currentStage._data.cameraZoom;
+                spectatorBoundingBox.shapeHeight = FlxG.height / currentStage._data.cameraZoom;
+                spectatorBoundingBox.updateHitbox();
+                spectatorBoundingBox.x = spectator.cameraFocusPoint.x - (spectatorBoundingBox.width/2) + currentStage._data.characters.gf.cameraOffsets[0] + 2;
+                spectatorBoundingBox.y = spectator.cameraFocusPoint.y - (spectatorBoundingBox.height/2) + currentStage._data.characters.gf.cameraOffsets[1] + 2;
+            }
+        }
+
+        forceUpdateBounds = false;
+
+        if (selectedProp != null  && !cancelInput) {
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    i.position[0] = Math.round(selectedProp.x);
+                    i.position[1] = Math.round(selectedProp.y);
+                }
+            }
+            
+        }
+
+        if (selectedCharacter != null && FlxG.mouse.pressed && !cancelInput) {
+            selectedCharacter.x += FlxG.mouse.deltaX / camGame.zoom;
+            selectedCharacter.y += FlxG.mouse.deltaY / camGame.zoom;
+
+            switch (selectedCharacterType) {
+                case "bf":
+                    currentStage._data.characters.bf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                    currentStage._data.characters.bf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                case "gf":
+                    currentStage._data.characters.gf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                    currentStage._data.characters.gf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                case "dad":
+                    currentStage._data.characters.dad.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
+                    currentStage._data.characters.dad.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+            }
+        }
+
+        if (FlxG.mouse.justPressedRight && selectedProp != null && FlxG.mouse.overlaps(selectedProp, camGame)) {
+            if (rightClickMenu != null)
+			{
+				rightClickMenu.destroy();
+				rightClickMenu = null;
+			}
+            rightClickMenu = RuntimeComponentBuilder.build(Paths.ui("stage-editor/rightClick/prop"));
+            rightClickMenu.x = FlxG.mouse.x;
+            rightClickMenu.y = FlxG.mouse.y;
+            rightClickMenu.cameras = [camInteract];
+            add(rightClickMenu);
+
+            duplicatePropCallback = ()->{
+                var proper = Reflect.copy(getSelectedPropData());
+                var properCount = 1;
+                for (i in currentStage._data.props) {
+                    if (i.name.startsWith(proper.name)) properCount++;
+                }
+                proper.name = proper.name + " (" + properCount + ")";
+                currentStage._data.props.push(proper);
+                refreshPropList();
+                reloadStage();
+                resetChars();
+
+                
+                propListView.selectedItem = propListView.dataSource.get(propListView.dataSource.size-1);
+                propListView.selectedItems = [propListView.dataSource.get(propListView.dataSource.size-1)];
+            }
+
+            bind(rightClickMenu.findComponent("edit"), MouseEvent.CLICK, editPropCallback);
+            bind(rightClickMenu.findComponent("delete"), MouseEvent.CLICK, deletePropCallback);
+            
+        }
+
+    }
+
+    function usingTransformTool() {
+        return FlxG.mouse.overlaps(tLC, camGame) || FlxG.mouse.overlaps(tMC, camGame) || FlxG.mouse.overlaps(tRC, camGame) || FlxG.mouse.overlaps(mRC, camGame) || FlxG.mouse.overlaps(bRC, camGame) || FlxG.mouse.overlaps(bMC, camGame) || FlxG.mouse.overlaps(bLC, camGame) || FlxG.mouse.overlaps(mLC, camGame);
+    }
+
+    
+    function updateTransformHandle(sprite:FunkinSprite, x:Float, y:Float, mouseDeltaX:Float, mouseDeltaY:Float, invZoom:Float, isSmall:Bool = false) {
+        if (sprite == null) return;
+        
+        var s = isSmall ? (0.9 * invZoom) : invZoom;
+        
+        
+        if (sprite.scale.x != s || sprite.scale.y != s) {
+            sprite.scale.set(s, s);
+            sprite.updateHitbox();
+        }
+
+        
+        if (selectedProp != null && (sprite.scrollFactor.x != selectedProp.scrollFactor.x || sprite.scrollFactor.y != selectedProp.scrollFactor.y)) {
+             sprite.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
+        }
+
+        sprite.x = x; 
+        sprite.y = y;
+
+        
+        var isOverlapping = FlxG.mouse.overlaps(sprite, camGame);
+        sprite.alpha = isOverlapping ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+
+        
+        if (FlxG.mouse.pressed && isOverlapping) {
+             sprite.x += mouseDeltaX;
+             sprite.y += mouseDeltaY;
+        }
+    }
+
+    var previous = "something";
+    function updateTransformTool() {
+        
+        var skip = false;
+        if (previous != selectedProp) {
+            previous = selectedProp;
+            skip = true;
+        }
+        if (previous == null && !skip) return;
+        
+        
+        if (camInteract != null) {
+            camInteract.scroll.x = camGame.scroll.x;
+            camInteract.scroll.y = camGame.scroll.y;
+            camInteract.zoom = camGame.zoom;
+            camInteract.visible = selectedProp != null;
+        }
+
+        if (selectedProp == null) return;
+
+        
+        
+        
+        var propCorners = CornerCalculation.calculate(selectedProp);
+        
+        var invZoom = 1 / camGame.zoom; 
+        var mouseX = FlxG.mouse.x;
+        var mouseY = FlxG.mouse.y;
+        var mouseDeltaX = FlxG.mouse.deltaX / camGame.zoom;
+        var mouseDeltaY = FlxG.mouse.deltaY / camGame.zoom;
+
+        
+
+        if (tLC != null) {
+            tLC.x += mouseDeltaX;
+            tLC.y += mouseDeltaY;
+            if (FlxG.mouse.overlaps(tLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.x += mouseDeltaX;
+                selectedProp.y += mouseDeltaY;
+                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            }
+            
+            updateTransformHandle(tLC, propCorners.topLeftCorner.x - (tLC.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
+        }
+
+        if (tMC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.x = mouseX;
+            if (FlxG.mouse.overlaps(tMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.y += mouseDeltaY;
+                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+                FlxG.mouse.x = Std.int(mouseLock.x); 
+            }
+            updateTransformHandle(tMC, propCorners.topLeftCorner.x - (tLC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (tLC.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
+        }
+
+        if (mLC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.y = mouseY;
+            if (FlxG.mouse.overlaps(mLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.x += mouseDeltaX;
+                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                FlxG.mouse.y = Std.int(mouseLock.y);
+            }
+            updateTransformHandle(mLC, propCorners.topLeftCorner.x - (mLC.width/2), propCorners.topLeftCorner.y - (mLC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
+        }
+
+        if (tRC != null) {
+            if (FlxG.mouse.overlaps(tRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.y += mouseDeltaY;
+                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y -= mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            }
+            updateTransformHandle(tRC, propCorners.topLeftCorner.x - (tRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (tRC.height/2), mouseDeltaX, mouseDeltaY, invZoom);
+        }
+
+        if (mRC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.y = mouseY;
+            if (FlxG.mouse.overlaps(mRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                FlxG.mouse.y = Std.int(mouseLock.y);
+            }
+            updateTransformHandle(mRC, propCorners.topLeftCorner.x - (mRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (mRC.height/2) + (selectedProp.height/2), mouseDeltaX, mouseDeltaY, invZoom, true);
+        }
+
+        if (bLC != null) {
+            if (FlxG.mouse.overlaps(bLC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.x += mouseDeltaX;
+                selectedProp.scale.x -= mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            }
+            updateTransformHandle(bLC, propCorners.topLeftCorner.x - (bLC.width/2), propCorners.topLeftCorner.y - (bLC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
+        }
+
+        if (bMC != null) {
+            if (FlxG.mouse.justPressed) mouseLock.x = mouseX;
+            if (FlxG.mouse.overlaps(bMC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+                FlxG.mouse.x = Std.int(mouseLock.x);
+            }
+            updateTransformHandle(bMC, propCorners.topLeftCorner.x - (bMC.width/2) + (selectedProp.width/2), propCorners.topLeftCorner.y - (bMC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom, true);
+        }
+
+        if (bRC != null) {
+            if (FlxG.mouse.overlaps(bRC, camGame) && FlxG.mouse.pressed && !cancelInput) {
+                selectedProp.scale.x += mouseDeltaX / (selectedProp.width / selectedProp.scale.x);
+                selectedProp.scale.y += mouseDeltaY / (selectedProp.height / selectedProp.scale.y);
+            }
+            updateTransformHandle(bRC, propCorners.topLeftCorner.x - (bRC.width/2) + selectedProp.width, propCorners.topLeftCorner.y - (bRC.height/2) + selectedProp.height, mouseDeltaX, mouseDeltaY, invZoom);
+        }
+
+        
+        if (selectedProp.scale.x < 0.1) selectedProp.scale.x = 0.1;
+        if (selectedProp.scale.y < 0.1) selectedProp.scale.y = 0.1;
+
+        if (cC != null) {
+            if (selectedProp != null) {
+                var cScale = 0.8 * invZoom;
+                if(cC.scale.x != cScale) {
+                    cC.scale.set(cScale, cScale);
+                    cC.updateHitbox();
+                }
+                cC.scrollFactor.set(selectedProp.scrollFactor.x, selectedProp.scrollFactor.y);
+
+                if (FlxG.mouse.overlaps(cC, camGame) && FlxG.mouse.pressed) {
+                    selectedProp.x += mouseDeltaX;
+                    selectedProp.y += mouseDeltaY;
+                }
+                cC.x = selectedProp.x + (selectedProp.width/2) - (cC.width/2);
+                cC.y = selectedProp.y + (selectedProp.height/2) - (cC.height/2);
+                cC.alpha = FlxG.mouse.overlaps(cC, camGame) ? (FlxG.mouse.pressed ? 1 : 0.75) : 0.5;
+            } else {
+                cC.alpha = 0.01;
+            }
+        }
+        
+        selectedProp.updateHitbox();
+    }
+
+    function refreshPropList() {
+        propListView.dataSource.clear();
+        for (i in currentStage._data.props) {
+            propListView.dataSource.add({ text: i.name, visible: true });
+        }
+    }
+
+    function getSelectedPropData() {
+        if (selectedProp != null) {
+            for (i in currentStage._data.props) {
+                if (i.name == selectedProp.name) {
+                    return i;
+                }
+            }
+        }
+    }
+
+    function getPropData(id:String) {
+        if (selectedProp != null) {
+            for (i in currentStage._data.props) {
+                if (i.name == id) {
+                    return i;
+                }
+            }
+        }
+    }
+
+    var danceToggle = false;
+    override function beatHit() {
+        super.beatHit();
+        var curBeat = get_conductorInUse().currentBeat;
+
+        for (i in [player, opponent, spectator]) {
+            if (i == null) continue;
+            if (curBeat % i._data.danceEvery == 0) {
+                if (i._data.startingAnimation == "danceRight" || i._data.startingAnimation == "danceLeft") {
+                    i.playAnimation(danceToggle ? "danceRight" : "danceLeft", false, true);
+                } else {
+                    i.playAnimation(i._data.startingAnimation ?? "idle", false, true);
+                }
+                
+                
+            }
+            
+        }
+        danceToggle = !danceToggle;
+    }
+    override function stepHit() {
+        super.stepHit();
+        var curStep = get_conductorInUse().currentStep;
+    }
+
+    function destroy() {
+        super.destroy();
+        Cursor.hide();
+        
+    }
+
+    public function test() {
+        FlxG.switchState(new MainMenuState());
+    }
+
+    function newNotification(title:String, body:String, ?type, ?expiryMs, ?actions) {
+        notificationManager.addNotification({
+            title: title,
+            body: body,
+            type: type ?? NotificationType.Default,
+            expiryMs: expiryMs ?? null,
+            actions: actions ?? []
+        });
+    }
+
+    function initNotification() {
+        notificationManager.addNotification({
+            title: "Welcome!",
+            body: "Welcome to the Nova Stage Editor! Press F1 for a user guide.",
+            type: NotificationType.Default
+        });
+    }
+
+    public function test2() {
+        NotificationManager.instance.addNotification({
+            title: "Test",
+            body: "This is a test"
+        });
+    }
+
+    function bind(component, mouseEvent, func) {
+        switch (mouseEvent) {
+            case MouseEvent.CLICK:
+                component.onClick = func;
+        }
+    }
+
+    function newKeybind(keys:Array<String>, action, ?type) {
+        keybinds.push({
+            keys: keys,
+            type: type ?? "justPressed",
+            action: action
+        });
+    }
+
+    function templateAnimation() {
+        var index = 0;
+        for (i in getSelectedPropData().animations) {
+            if (i.name.startsWith("New Animation")) {
+                index++;
+            }
+        }
+        return {
+            offsets: [
+                0,
+                0
+            ],
+            prefix: "",
+            frameIndices: [],
+            name: "New Animation" + (index != 0 ? " (" + index + ")" : ""),
+            looped: false,
+            flipX: false,
+            flipY: false,
+            assetPath: null,
+            frameRate: 24
+        }
+    }
+
+    function templateProp() {
+        var theZIndex = 0;
+        var index = 0;
+        for (i in currentStage._data.props) {
+            if (i.name.startsWith("New Prop")) {
+                index++;
+            }
+            if (i.zIndex > theZIndex)
+                theZIndex = i.zIndex;
+        }
+        return {
+            name: "New Prop" + (index != 0 ? " (" + index + ")" : ""),
+            blend: "",
+			color: "#FFFFFF",
+			angle: 0,
+			startingAnimation: null,
+			assetPath: "icons/icon-bf",
+			zIndex: theZIndex + 10,
+			danceEvery: 0,
+			position: [
+				0,
+				0
+			],
+			scale: Reflect.copy(new Stage('mainStage')._data.props[0]).scale,
+			animType: "sparrow",
+			flipX: false,
+			flipY: false,
+			isPixel: false,
+			scroll: [
+				1,
+				1
+			],
+			alpha: 1,
+			animations: []
+        }
+    }
+
+    function stringToIndices(string:String):Array<Int> {
+        string = string.replace(" ", "");
+        var split = string.split(",");
+        var indices = [];
+        for (i in split) {
+            if (Std.parseInt(i) != null)
+                indices.push(Std.parseInt(i));
+        }
+        return indices;
+    }
+
+    function resetChars() {
+        if (player != null) {
+            player.zIndex = currentStage._data.characters.bf.zIndex;
+            player.flipX = !player._data.flipX;
+            if (currentStage._data.characters.bf.flipX)
+                player.flipX = !player.flipX;
+            player.x = currentStage._data.characters.bf.position[0] - player.characterOrigin.x;
+            player.y = currentStage._data.characters.bf.position[1] - player.characterOrigin.y;
+            player.scale.x = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
+            player.scale.y = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
+            player.scrollFactor.x = currentStage._data.characters.bf.scroll[0];
+            player.scrollFactor.y = currentStage._data.characters.bf.scroll[1];
+            player.alpha = currentStage._data.characters.bf.alpha;
+            player.angle = currentStage._data.characters.bf.angle;
+
+            if (!currentStage.members.contains(player)) {
+                currentStage.characters.set('bf', player);
+                currentStage.add(player);
+            }
+
+            player.playAnimation(player._data.animations[0].name, false, true);
+            player.animation.finish();
+            player.updateHitbox();
+        }
+        if (opponent != null) {
+            opponent.zIndex = currentStage._data.characters.dad.zIndex;
+            opponent.flipX = opponent._data.flipX;
+            if (currentStage._data.characters.dad.flipX)
+                opponent.flipX = !opponent.flipX;
+            opponent.x = currentStage._data.characters.dad.position[0] - opponent.characterOrigin.x;
+            opponent.y = currentStage._data.characters.dad.position[1] - opponent.characterOrigin.y;
+            opponent.scale.x = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
+            opponent.scale.y = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
+            opponent.scrollFactor.x = currentStage._data.characters.dad.scroll[0];
+            opponent.scrollFactor.y = currentStage._data.characters.dad.scroll[1];
+            opponent.alpha = currentStage._data.characters.dad.alpha;
+            opponent.angle = currentStage._data.characters.dad.angle;
+
+            if (!currentStage.members.contains(opponent)) {
+                currentStage.characters.set('dad', opponent);
+                currentStage.add(opponent);
+            }
+
+            opponent.playAnimation(opponent._data.animations[0].name, false, true);
+            opponent.animation.finish();
+            opponent.updateHitbox();
+        }
+
+        if (spectator != null) {
+            spectator.zIndex = currentStage._data.characters.gf.zIndex;
+            spectator.flipX = spectator._data.flipX;
+            if (currentStage._data.characters.gf.flipX)
+                spectator.flipX = !spectator.flipX;
+            spectator.x = currentStage._data.characters.gf.position[0] - spectator.characterOrigin.x;
+            spectator.y = currentStage._data.characters.gf.position[1] - spectator.characterOrigin.y;
+            spectator.scale.x = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
+            spectator.scale.y = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
+            spectator.scrollFactor.x = currentStage._data.characters.gf.scroll[0];
+            spectator.scrollFactor.y = currentStage._data.characters.gf.scroll[1];
+            spectator.alpha = currentStage._data.characters.gf.alpha;
+            spectator.angle = currentStage._data.characters.gf.angle;
+
+            if (!currentStage.members.contains(spectator)) {
+                currentStage.characters.set('gf', spectator);
+                currentStage.add(spectator);
+            }
+
+            spectator.playAnimation(spectator._data.animations[0].name);
+            spectator.animation.finish();
+            spectator.updateHitbox();
+        }
+        currentStage.refresh();
+    }
+
+    function reloadStageList() {
+        stageList.dataSource.clear();
+
+        var data = new Stage("mainStage");
+        data.onCreate();
+
+        customStageRegistry.set("mainStage", data._data);
+        stageList.dataSource.add({ text: "Main Stage", id: "mainStage" });
+
+        for (i in stageRegistry.entries.keys()) {
+            if (!blacklist.contains(stageRegistry.entries.get(i).stageName)) {
+                var data = new Stage(i);
+                if (precacheStagesSave)
+                    data.onCreate();
+                customStageRegistry.set(i, data._data);
+                stageList.dataSource.add({ text: stageRegistry.entries.get(i).stageName, id: i });
+            }
+        }
+    }
+
+    function checkImageExists(id:String) {
+        var fileExists = false;
+        var foldersToCheck = [
+            "assets/",
+            "assets/" + currentStage._data.directory + "/",
+        ];
+
+        for (mod in PolymodHandler.getAllMods()) {
+            foldersToCheck.push("mods/" + mod.id + "/");
+        }
+
+        for (i in foldersToCheck) {
+            if (FileUtil.fileExists(i + "images/" + id + ".png") || FileUtil.directoryExists(i + "images/" + id))
+                fileExists = true;
+
+            if (FileUtil.fileExists(i + "shared/images/" + id + ".png") || FileUtil.directoryExists(i + "images/" + id))
+                fileExists = true;
+        }
+
+        return fileExists;
+    }
+
+    function getCornerCircle(outer:Bool) {
+        var theCircle = FunkinSprite.create(0, 0, 'circle');
+        
+        theCircle.antialiasing = true;
+        
+        
+        return theCircle;
+    }
+
+    /* override function onFocusLost(e) {
+        super.onFocusLost(e);
+        focusTimer = 2;
+    }
+
+    override function onFocus(e) {
+        super.onFocus(e);
+        focusTimer = 2;
+    } */
+}

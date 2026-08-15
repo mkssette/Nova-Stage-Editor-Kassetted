@@ -1,0 +1,23 @@
+import openfl.Assets;
+import flixel.addons.display.FlxRuntimeShader;
+
+class WhiteOutlineRuntimeShader extends FlxRuntimeShader {
+    var thickness:Float = 5;
+
+    public function new() {
+        var fragText:String = Assets.getText(Paths.frag("WhiteOutline"));
+		super(fragText);
+
+        setFloat('thickness', thickness);
+    }
+
+    public function setThickness(value:Float):Void {
+        this.setFloat("thickness", value);
+        return thickness = value;
+    }
+
+    public function update(elapsed) {
+        setThickness(thickness);
+    }
+
+}

@@ -1,0 +1,47 @@
+<window title="Editing $character" width="400" maximizable="false" minimizable="false" collapsable="false" closable="false">
+    <grid width="100%">
+        <label text="Position:" style="padding: 2px;" verticalAlign="center"/>
+        <hbox width="100%">
+            <number-stepper id="editCharacterWindowPosStepperX" pos="0" step="1" width="100%" verticalAlign="center"/>
+            <number-stepper id="editCharacterWindowPosStepperY" pos="0" step="1" width="100%" verticalAlign="center"/>
+        </hbox>
+
+
+        <label text="Scroll:" style="padding: 2px;" verticalAlign="center"/>
+        <hbox width="100%">
+            <number-stepper id="editCharacterWindowScrollStepperX" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+            <number-stepper id="editCharacterWindowScrollStepperY" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+        </hbox>
+
+        <label text="Camera Offsets:" style="padding: 2px;" verticalAlign="center"/>
+        <hbox width="100%">
+            <number-stepper id="charCamOffsetX" pos="0" step="1" width="100%" verticalAlign="center"/>
+            <number-stepper id="charCamOffsetY" pos="0" step="1" width="100%" verticalAlign="center"/>
+        </hbox>
+
+        <label text="Scale:" style="padding: 2px;" verticalAlign="center"/>
+        <number-stepper id="editCharacterWindowScaleStepper" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+        
+        <label text="Alpha:" style="padding: 2px;" verticalAlign="center"/>
+        <number-stepper id="editCharacterWindowAlphaStepper" min="0" max="1" pos="0" step="0.1" width="100%" verticalAlign="center"/>
+        
+        <label text="Angle:" style="padding: 2px;" verticalAlign="center"/>
+        <number-stepper id="editCharacterWindowAngleStepper" pos="0" step="1" width="100%" verticalAlign="center" min="-1" max="360"/>
+        
+        <label text="Z-Index/Layer:" style="padding: 2px;" verticalAlign="center"/>
+        <number-stepper id="editCharacterWindowZIndexStepper" min="0" pos="0" step="1" width="100%" verticalAlign="center"/>
+        
+    </grid>
+    <hbox width="100%" style="padding: 10px;" hidden="true">
+        <spacer width="50%"/>
+        <label text="Visible In Editor:" style="padding: 2px;" verticalAlign="center"/>
+        <checkbox id="editCharacterWindowVisibleCheckbox"/>
+    </hbox>
+    <box id="editorBox" width="100%">
+        <button id="editCharaterWindowOpenEditor" text="Edit Character With Character Editor" width="100%"/>
+    </box>
+    <window-footer width="100%">
+        <spacer width="100%" />
+        <button text="Close/Apply" id="editCharacterWindowConfirm" />
+    </window-footer>
+</window>
