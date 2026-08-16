@@ -485,6 +485,14 @@ class StageEditorTheSecond extends MusicBeatState {
         };
         
 
+        var exitToMenuBtn = menuBar.findComponent("exitToMenu");
+        if (exitToMenuBtn != null) {
+            exitToMenuBtn.onClick = ()->{
+                FlxG.switchState(new MainMenuState());
+                PolymodHandler.forceReloadAssets();
+            };
+        }
+        
         var resetCamera = menuBar.findComponent("resetCamera");
 
         resetCameraCallback = () -> FlxTween.tween(camGame, { zoom: currentStage.camZoom }, 0.25, { ease: FlxEase.quartOut });
