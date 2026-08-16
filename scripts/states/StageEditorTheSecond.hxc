@@ -83,11 +83,13 @@ import flixel.addons.effects.chainable.FlxEffectSprite;
 import haxe.ui.events.MouseEvent;
 
 import funkin.modding.PolymodHandler;
-
+import funkin.modding.module.ModuleHandler;
 import funkin.play.character.CharacterDataParser;
 
 import funkin.util.SortUtil;
 import funkin.util.FileUtil;
+import openfl.net.FileFilter;
+import haxe.io.Bytes;
 
 import funkin.data.stage.StageRegistry;
 
@@ -205,6 +207,7 @@ class StageEditorTheSecond extends MusicBeatState {
     var rightClickMenu;
 
     var stageDataWindow;
+    var psychImportWindow;
 
     var editCharacterWindow;
 
@@ -236,6 +239,7 @@ class StageEditorTheSecond extends MusicBeatState {
     function get_cancelInput():Bool {
         var isMouseOverUI = false;
         if (stageDataWindow != null && stageDataWindow.exists && stageDataWindow.cameras != null && FlxG.mouse.overlaps(stageDataWindow)) isMouseOverUI = true;
+        if (psychImportWindow != null && psychImportWindow.exists && psychImportWindow.cameras != null && FlxG.mouse.overlaps(psychImportWindow) && psychImportWindow.hidden == false) isMouseOverUI = true;
         if (editCharacterWindow != null && editCharacterWindow.exists && editCharacterWindow.cameras != null && FlxG.mouse.overlaps(editCharacterWindow)) isMouseOverUI = true;
         if (editPropWindow != null && editPropWindow.exists && editPropWindow.cameras != null && FlxG.mouse.overlaps(editPropWindow)) isMouseOverUI = true;
         if (editAnimationsWindow != null && editAnimationsWindow.exists && editAnimationsWindow.cameras != null && FlxG.mouse.overlaps(editAnimationsWindow)) isMouseOverUI = true;
@@ -401,7 +405,84 @@ class StageEditorTheSecond extends MusicBeatState {
 
         menuBar = RuntimeComponentBuilder.build(Paths.ui("stage-editor/menubar"));
         menuBar.findComponent("menuBarTitle").text = editorTitle + " v" + editorVersion;
+        
+        var importPsychJsonButton = menuBar.findComponent("importPsychJsonButton");
 
+        psychImportWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/psychImportWindow"));
+        psychImportWindow.screenCenter();
+        psychImportWindow.windowManager = windowManager;
+        psychImportWindow.hide();
+        add(psychImportWindow);
+
+        var jsonPathField = psychImportWindow.findComponent("jsonPathField");
+        var browseJsonButton = psychImportWindow.findComponent("browseJsonButton");
+        var luaPathField = psychImportWindow.findComponent("luaPathField");
+        var browseLuaButton = psychImportWindow.findComponent("browseLuaButton");
+        var convertStageButton = psychImportWindow.findComponent("convertStageButton");
+        
+        var psychJsonText = "";
+        var psychLuaText = "";
+        var psychOriginalFileName = "";
+
+        browseJsonButton.onClick = ()->{
+            FileUtil.browseForFile("Select Psych Engine Stage JSON", [new FileFilter("JSON Files", "*.json")], (data)->{
+                jsonPathField.text = data.fullPath;
+                psychJsonText = data.bytes.toString();
+                psychOriginalFileName = data.name;
+                convertStageButton.disabled = false;
+            });
+        };
+
+        browseLuaButton.onClick = ()->{
+            FileUtil.browseForFile("Select Psych Engine Stage LUA", [new FileFilter("Lua Files", "*.lua")], (data)->{
+                luaPathField.text = data.fullPath;
+                psychLuaText = data.bytes.toString();
+                if (psychOriginalFileName == "") psychOriginalFileName = data.name;
+                convertStageButton.disabled = false;
+            });
+        };
+
+        convertStageButton.onClick = ()->{
+            var Converters = ModuleHandler.getModule("StageConverters");
+            var convertedFile = Converters.scriptCall("fromPsych", [psychJsonText, psychLuaText]);
+            
+            if (convertedFile != null) {
+                var finalName = StringTools.replace(StringTools.replace(psychOriginalFileName, ".json", ""), ".lua", "");
+                var theName = finalName.split("");
+                if (theName.length > 0) theName[0] = theName[0].toUpperCase();
+                convertedFile.name = theName.join("");
+                
+                var saveName = StringTools.replace(psychOriginalFileName, ".lua", ".json");
+                if (saveName == "") saveName = "convertedStage.json";
+                var convertedJson = Json.stringify(convertedFile, null, "\t");
+                
+                FileUtil.saveFile("Save converted JSON", Bytes.ofString(convertedJson), [FileUtil.FILE_FILTER_JSON], (destPath)->{
+                    reloadStageList();
+                    if (psychLuaText != "" && psychJsonText != "") {
+                        newNotification("Success", "Stage imported with Lua and JSON!", NotificationType.Success);
+                    } else if (psychLuaText != "") {
+                        newNotification("Success", "Stage imported from Lua only!", NotificationType.Success);
+                    } else {
+                        newNotification("Success", "Stage imported from JSON only!", NotificationType.Success);
+                    }
+                    psychImportWindow.hide();
+                }, ()->{
+                    newNotification("Cancelled", "Save converted stage cancelled.", NotificationType.Warning);
+                }, saveName);
+            } else {
+                newNotification("Error", "Failed to parse Psych Stage!", NotificationType.Error);
+            }
+        };
+
+        importPsychJsonButton.onClick = ()->{
+            jsonPathField.text = "";
+            luaPathField.text = "";
+            psychJsonText = "";
+            psychLuaText = "";
+            psychOriginalFileName = "";
+            convertStageButton.disabled = true;
+            psychImportWindow.show();
+        };
         
 
         var resetCamera = menuBar.findComponent("resetCamera");
@@ -1178,6 +1259,8 @@ class StageEditorTheSecond extends MusicBeatState {
             add(negativePositive);
             index++;
         }
+
+
 
         var editCharacterButton = stageDataWindow.findComponent("editCharacterButton");
         editCharacterButton.onClick = ()->{

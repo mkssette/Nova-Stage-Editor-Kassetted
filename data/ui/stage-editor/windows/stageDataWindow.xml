@@ -2,64 +2,66 @@
     <window-title width="100%">
     </window-title>
     <scrollview width="100%" height="100%" contentWidth="100%">
-    <vbox width="100%">
-        <dropdown id="stageDropdown" text="Select Stage" width="100%" searchable="true">
-        </dropdown>
-        
-        <grid columns="3" width="100%" style="spacing: 4px;" horizontalAlign="center">
-            <label text="Player" textAlign="center" width="100%" style="font-size: 11px;" />
-            <label text="Opponent" textAlign="center" width="100%" style="font-size: 11px;" />
-            <label text="Spectator" textAlign="center" width="100%" style="font-size: 11px;" />
+        <vbox width="100%">
+            <vbox width="100%">
+                <dropdown id="stageDropdown" text="Select Stage" width="100%" searchable="true">
+                </dropdown>
+                
+                <grid columns="3" width="100%" style="spacing: 4px;" horizontalAlign="center">
+                    <label text="Player" textAlign="center" width="100%" style="font-size: 11px;" />
+                    <label text="Opponent" textAlign="center" width="100%" style="font-size: 11px;" />
+                    <label text="Spectator" textAlign="center" width="100%" style="font-size: 11px;" />
+                    
+                    <button id="playerDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
+                    <button id="opponentDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
+                    <button id="spectatorDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
+                </grid>
+            </vbox>
+
+            <grid width="100%">
+              <label text="Stage Name:" style="padding: 2px;" verticalAlign="center"/>
+              <textfield  id="stageNameTextField" placeholder="Stage Name" width="100%" verticalAlign="center"/>
+
+              <label text="Camera Zoom:" style="padding: 2px;" verticalAlign="center"/>
+              <number-stepper id="defualtCamZoomStepper" min="0" pos="0.7" step="0.1" width="100%" verticalAlign="center"/>
+            </grid>
             
-            <button id="playerDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
-            <button id="opponentDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
-            <button id="spectatorDropdown" text="None" width="70" height="70" iconPosition="top" style="font-size: 10px;" />
-        </grid>
-    </vbox>
+            <vbox width="100%">
+                <label text="Props:" style="padding: 2px;" verticalAlign="center"/>
+                <listview id="propsListView" width="100%" height="180" selectedIndex="0">
+                    <item-renderer width="100%" layout="horizontal">
+                       <label id="text" width="100%" verticalAlign="center"/>
+                       <checkbox id="visible" selected="true" />
+                   </item-renderer>
+                    <data>
+                        <item text="Test"/>
+                    </data>
+                </listview>
+            </vbox>
 
-    <grid width="100%">
-      <label text="Stage Name:" style="padding: 2px;" verticalAlign="center"/>
-      <textfield  id="stageNameTextField" placeholder="Stage Name" width="100%" verticalAlign="center"/>
+            <hbox width="100%">
+                <button id="createPropButton" text="Create Prop" width="100%"/>
+                <button id="deletePropButton" text="Delete Prop" width="100%"/>
+            </hbox>
 
-      <label text="Camera Zoom:" style="padding: 2px;" verticalAlign="center"/>
-      <number-stepper id="defualtCamZoomStepper" min="0" pos="0.7" step="0.1" width="100%" verticalAlign="center"/>
-    </grid>
-    
-    <vbox width="100%">
-        <label text="Props:" style="padding: 2px;" verticalAlign="center"/>
-        <listview id="propsListView" width="100%" height="180" selectedIndex="0">
-            <item-renderer width="100%" layout="horizontal">
-               <label id="text" width="100%" verticalAlign="center"/>
-               <checkbox id="visible" selected="true" />
-           </item-renderer>
-            <data>
-                <item text="Test"/>
-            </data>
-        </listview>
-    </vbox>
+            <button id="editPropButton" text="Edit Selected Prop" width="100%"/>
 
-    <hbox width="100%">
-        <button id="createPropButton" text="Create Prop" width="100%"/>
-        <button id="deletePropButton" text="Delete Prop" width="100%"/>
-    </hbox>
+            <vbox width="100%">
+                <label text="Characters:" style="padding: 2px;" verticalAlign="center"/>
+                <listview id="charactersListView" width="100%" selectedIndex="0">
+                    <item-renderer width="100%" layout="horizontal">
+                       <label id="text" width="100%" verticalAlign="center" />
+                       <checkbox id="visible" selected="true" />
+                   </item-renderer>
+                    <data>
+                        <item text="Player" visible="true"/>
+                        <item text="Opponent" visible="true"/>
+                        <item text="Spectator" visible="true"/>
+                    </data>
+                </listview>
+            </vbox>
 
-    <button id="editPropButton" text="Edit Selected Prop" width="100%"/>
-
-    <vbox width="100%">
-        <label text="Characters:" style="padding: 2px;" verticalAlign="center"/>
-        <listview id="charactersListView" width="100%" selectedIndex="0">
-            <item-renderer width="100%" layout="horizontal">
-               <label id="text" width="100%" verticalAlign="center" />
-               <checkbox id="visible" selected="true" />
-           </item-renderer>
-            <data>
-                <item text="Player" visible="true"/>
-                <item text="Opponent" visible="true"/>
-                <item text="Spectator" visible="true"/>
-            </data>
-        </listview>
-    </vbox>
-
-    <button id="editCharacterButton" text="Edit Selected Character" width="100%"/>
+            <button id="editCharacterButton" text="Edit Selected Character" width="100%"/>
+        </vbox>
     </scrollview>
 </window>

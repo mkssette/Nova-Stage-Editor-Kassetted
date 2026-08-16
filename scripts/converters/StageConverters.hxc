@@ -4,6 +4,8 @@ import haxe.io.Path;
 import flixel.FlxG;
 import Xml;
 import Std;
+import haxe.Json;
+import StringTools;
 
 class StageConverters extends Module {
     
@@ -96,6 +98,324 @@ class StageConverters extends Module {
                 }
             }
             i++;
+        }
+        return template;
+    }
+
+    public function fromPsych(jsonString:String, luaString:String = "") {
+        var psychData:Dynamic = {
+            defaultZoom: 0.9,
+            boyfriends: [770, 100],
+            girlfriends: [400, 130],
+            opponents: [100, 100],
+            camera_boyfriend: [0, 0],
+            camera_girlfriend: [0, 0],
+            camera_opponent: [0, 0]
+        };
+        
+        if (jsonString != "") {
+            try {
+                psychData = Json.parse(jsonString);
+            } catch(e:Dynamic) {
+                trace("Error parsing Psych JSON: " + e);
+                return null;
+            }
+        }
+
+        var psychProps:Array<Dynamic> = [];
+        
+        if (psychData != null && psychData.objects != null) {
+            var objs:Array<Dynamic> = cast psychData.objects;
+            for (obj in objs) {
+                if (obj.type == "sprite" || obj.type == "animatedSprite" || obj.type == "square") {
+                    var isAnim = obj.type == "animatedSprite";
+                    
+                    var newProp = {
+                        name: obj.name != null ? obj.name : "unnamed_" + Std.string(Math.random()),
+                        assetPath: obj.image != null ? obj.image : "",
+                        position: [obj.x != null ? obj.x : 0, obj.y != null ? obj.y : 0],
+                        scale: obj.scale != null ? obj.scale : [1.0, 1.0],
+                        scroll: obj.scrollFactor != null ? obj.scrollFactor : [1.0, 1.0],
+                        flipX: obj.flipX == true,
+                        flipY: obj.flipY == true,
+                        alpha: obj.alpha != null ? obj.alpha : 1.0,
+                        blend: obj.blend != null ? obj.blend : "",
+                        color: obj.color != null ? obj.color : "#FFFFFF",
+                        animType: isAnim ? "sparrow" : "none",
+                        zIndex: 0,
+                        startingAnimation: null,
+                        danceEvery: isAnim ? 1 : 0,
+                        animations: []
+                    };
+                    
+                    if (isAnim && obj.animations != null) {
+                        var anims:Array<Dynamic> = cast obj.animations;
+                        for (a in anims) {
+                            var loop = a.loop == true;
+                            newProp.animations.push({
+                                name: a.anim,
+                                prefix: a.name,
+                                fps: a.fps != null ? a.fps : 24,
+                                looped: loop,
+                                offsets: a.offsets != null ? a.offsets : [0, 0],
+                                indices: a.indices != null ? a.indices : []
+                            });
+                        }
+                        if (obj.firstAnimation != null) {
+                            newProp.startingAnimation = obj.firstAnimation;
+                        } else if (newProp.animations.length > 0) {
+                            newProp.startingAnimation = newProp.animations[0].name;
+                        }
+                    }
+                    
+                    psychProps.push(newProp);
+                }
+            }
+        }
+
+        if (luaString != "") {
+            var lines = luaString.split("\n");
+            
+            var makeSpriteEReg = new EReg("make(?:Animated)?LuaSprite\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*,\\s*([-0-9.]+)\\s*,\\s*([-0-9.]+)\\s*\\)", "i");
+            var scrollFactorEReg = new EReg("setScrollFactor\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*([-0-9.]+)\\s*,\\s*([-0-9.]+)\\s*\\)", "i");
+            var scaleObjectEReg = new EReg("scaleObject\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*([-0-9.]+)\\s*,\\s*([-0-9.]+)\\s*\\)", "i");
+            var addSpriteEReg = new EReg("addLuaSprite\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*(true|false)\\s*\\)", "i");
+            var addAnimEReg = new EReg("addAnimationByPrefix\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*,\\s*([0-9]+)\\s*,\\s*(true|false)\\s*\\)", "i");
+            
+            var luaPropsMap:Map<String, Dynamic> = new Map();
+            
+            for (line in lines) {
+                if (makeSpriteEReg.match(line)) {
+                    var isAnim = line.indexOf("Animated") != -1;
+                    var name = makeSpriteEReg.matched(1);
+                    var img = makeSpriteEReg.matched(2);
+                    var xx = Std.parseFloat(makeSpriteEReg.matched(3));
+                    var yy = Std.parseFloat(makeSpriteEReg.matched(4));
+                    
+                    var newProp = {
+                        name: name,
+                        assetPath: img,
+                        position: [xx, yy],
+                        scale: [1.0, 1.0],
+                        scroll: [1.0, 1.0],
+                        flipX: false,
+                        flipY: false,
+                        alpha: 1.0,
+                        blend: "",
+                        color: "#FFFFFF",
+                        animType: isAnim ? "sparrow" : "none",
+                        zIndex: 0,
+                        startingAnimation: null,
+                        danceEvery: isAnim ? 1 : 0,
+                        animations: []
+                    };
+                    luaPropsMap.set(name, newProp);
+                }
+                
+                if (scrollFactorEReg.match(line)) {
+                    var name = scrollFactorEReg.matched(1);
+                    if (luaPropsMap.exists(name)) {
+                        luaPropsMap.get(name).scroll = [Std.parseFloat(scrollFactorEReg.matched(2)), Std.parseFloat(scrollFactorEReg.matched(3))];
+                    }
+                }
+                
+                if (scaleObjectEReg.match(line)) {
+                    var name = scaleObjectEReg.matched(1);
+                    if (luaPropsMap.exists(name)) {
+                        luaPropsMap.get(name).scale = [Std.parseFloat(scaleObjectEReg.matched(2)), Std.parseFloat(scaleObjectEReg.matched(3))];
+                    }
+                }
+                
+                if (addAnimEReg.match(line)) {
+                    var name = addAnimEReg.matched(1);
+                    if (luaPropsMap.exists(name)) {
+                        var p = luaPropsMap.get(name);
+                        p.animations.push({
+                            name: addAnimEReg.matched(2),
+                            prefix: addAnimEReg.matched(3),
+                            fps: Std.parseInt(addAnimEReg.matched(4)),
+                            looped: addAnimEReg.matched(5) == "true",
+                            offsets: [0, 0],
+                            indices: []
+                        });
+                        if (p.startingAnimation == null) p.startingAnimation = addAnimEReg.matched(2);
+                    }
+                }
+
+                if (addSpriteEReg.match(line)) {
+                    var name = addSpriteEReg.matched(1);
+                    var front = addSpriteEReg.matched(2) == "true";
+                    if (luaPropsMap.exists(name)) {
+                        var p = luaPropsMap.get(name);
+                        p.zIndex = front ? 10 : 0;
+                        psychProps.push(p);
+                    }
+                }
+            }
+        }
+
+        var template = {
+            name: "PsychImport",
+            directory: "",
+            cameraZoom: psychData.defaultZoom != null ? psychData.defaultZoom : 1.0,
+            props: psychProps,
+            characters: {
+                bf: {
+                    zIndex: 5,
+                    position: [770, 100],
+                    cameraOffsets: [0, 0]
+                },
+                gf: {
+                    zIndex: 5,
+                    position: [400, 130],
+                    cameraOffsets: [0, 0]
+                },
+                dad: {
+                    zIndex: 5,
+                    position: [100, 100],
+                    cameraOffsets: [0, 0]
+                }
+            }
+        };
+
+        if (psychData.boyfriend != null && psychData.boyfriend.length >= 2) {
+            template.characters.bf.position = [psychData.boyfriend[0], psychData.boyfriend[1]];
+        }
+        if (psychData.opponent != null && psychData.opponent.length >= 2) {
+            template.characters.dad.position = [psychData.opponent[0], psychData.opponent[1]];
+        }
+        if (psychData.girlfriend != null && psychData.girlfriend.length >= 2) {
+            template.characters.gf.position = [psychData.girlfriend[0], psychData.girlfriend[1]];
+        }
+        if (psychData.camera_boyfriend != null && psychData.camera_boyfriend.length >= 2) {
+            template.characters.bf.cameraOffsets = [psychData.camera_boyfriend[0], psychData.camera_boyfriend[1]];
+        }
+        if (psychData.camera_opponent != null && psychData.camera_opponent.length >= 2) {
+            template.characters.dad.cameraOffsets = [psychData.camera_opponent[0], psychData.camera_opponent[1]];
+        }
+        if (psychData.camera_girlfriend != null && psychData.camera_girlfriend.length >= 2) {
+            template.characters.gf.cameraOffsets = [psychData.camera_girlfriend[0], psychData.camera_girlfriend[1]];
+        }
+
+        if (psychData.objects != null && Std.isOfType(psychData.objects, Array)) {
+            for (obj in (psychData.objects:Array<Dynamic>)) {
+                if (obj == null) continue;
+                var prop = {
+                    name: obj.name != null ? obj.name : "PsychProp_" + Std.random(9999),
+                    assetPath: obj.image != null ? obj.image : "",
+                    position: [
+                        obj.position != null ? obj.position[0] : 0,
+                        obj.position != null ? obj.position[1] : 0
+                    ],
+                    scale: [
+                        obj.scale != null ? obj.scale[0] : 1,
+                        obj.scale != null ? obj.scale[1] : 1
+                    ],
+                    scroll: [
+                        obj.scrollFactor != null ? obj.scrollFactor[0] : 1,
+                        obj.scrollFactor != null ? obj.scrollFactor[1] : 1
+                    ],
+                    flipX: false,
+                    flipY: false,
+                    animType: "sparrow",
+                    animations: [],
+                    startingAnimation: null,
+                    danceEvery: 0
+                };
+                if (obj.animations != null) {
+                    for (anim in (obj.animations:Array<Dynamic>)) {
+                        prop.animations.push({
+                            name: anim.anim,
+                            prefix: anim.name,
+                            fps: anim.framerate != null ? anim.framerate : 24,
+                            looped: anim.loop != null ? anim.loop : false,
+                            offsets: anim.offsets != null ? [anim.offsets[0], anim.offsets[1]] : [0, 0]
+                        });
+                    }
+                }
+                template.props.push(prop);
+            }
+        }
+
+        if (luaString != null && luaString.length > 0) {
+            var lines = luaString.split("\n");
+            var luaSprites:Dynamic = {};
+            for (line in lines) {
+                line = StringTools.trim(line);
+                if (line.length == 0 || StringTools.startsWith(line, "--")) continue;
+                var parenIndex = line.indexOf("(");
+                if (parenIndex == -1) continue;
+                var funcName = line.substring(0, parenIndex);
+                var argsStr = line.substring(parenIndex + 1, line.lastIndexOf(")"));
+                var args:Array<String> = [];
+                var currentArg = "";
+                var inQuotes = false;
+                for (i in 0...argsStr.length) {
+                    var char = argsStr.charAt(i);
+                    if (char == "'" || char == '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char == "," && !inQuotes) {
+                        args.push(StringTools.trim(currentArg));
+                        currentArg = "";
+                    } else {
+                        currentArg += char;
+                    }
+                }
+                if (currentArg.length > 0) args.push(StringTools.trim(currentArg));
+                for (i in 0...args.length) {
+                    if ((StringTools.startsWith(args[i], "'") && StringTools.endsWith(args[i], "'")) || 
+                        (StringTools.startsWith(args[i], "\"") && StringTools.endsWith(args[i], "\""))) {
+                        args[i] = args[i].substring(1, args[i].length - 1);
+                    }
+                }
+                if (args.length == 0) continue;
+                var tag = args[0];
+
+                if (funcName == "makeLuaSprite" || funcName == "makeAnimatedLuaSprite") {
+                    if (luaSprites[tag] == null) {
+                        luaSprites[tag] = {
+                            name: tag,
+                            assetPath: args.length > 1 ? args[1] : "",
+                            position: [
+                                args.length > 2 ? Std.parseFloat(args[2]) : 0,
+                                args.length > 3 ? Std.parseFloat(args[3]) : 0
+                            ],
+                            scale: [1, 1],
+                            scroll: [1, 1],
+                            flipX: false,
+                            flipY: false,
+                            animType: "sparrow",
+                            animations: [],
+                            startingAnimation: null,
+                            danceEvery: 0
+                        };
+                    }
+                } else if (funcName == "setScrollFactor" && luaSprites[tag] != null) {
+                    luaSprites[tag].scroll[0] = args.length > 1 ? Std.parseFloat(args[1]) : 1;
+                    luaSprites[tag].scroll[1] = args.length > 2 ? Std.parseFloat(args[2]) : 1;
+                } else if (funcName == "scaleObject" && luaSprites[tag] != null) {
+                    luaSprites[tag].scale[0] = args.length > 1 ? Std.parseFloat(args[1]) : 1;
+                    luaSprites[tag].scale[1] = args.length > 2 ? Std.parseFloat(args[2]) : 1;
+                } else if (funcName == "addAnimationByPrefix" && luaSprites[tag] != null) {
+                    luaSprites[tag].animations.push({
+                        name: args.length > 1 ? args[1] : "idle",
+                        prefix: args.length > 2 ? args[2] : "",
+                        fps: args.length > 3 ? Std.parseInt(args[3]) : 24,
+                        looped: args.length > 4 ? (args[4] == "true") : false,
+                        offsets: [0, 0]
+                    });
+                } else if (funcName == "addOffset" && luaSprites[tag] != null) {
+                    var animName = args.length > 1 ? args[1] : "";
+                    for (anim in (luaSprites[tag].animations:Array<Dynamic>)) {
+                        if (anim.name == animName) {
+                            anim.offsets[0] = args.length > 2 ? Std.parseFloat(args[2]) : 0;
+                            anim.offsets[1] = args.length > 3 ? Std.parseFloat(args[3]) : 0;
+                        }
+                    }
+                } else if (funcName == "addLuaSprite" && luaSprites[tag] != null) {
+                    template.props.push(luaSprites[tag]);
+                }
+            }
         }
         return template;
     }

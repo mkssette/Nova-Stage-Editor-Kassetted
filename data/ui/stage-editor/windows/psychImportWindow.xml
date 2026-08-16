@@ -1,0 +1,15 @@
+<window title="Import Psych Engine Stage" width="400" height="200" maximizable="false" minimizable="false" collapsable="false" closable="true">
+    <vbox width="100%" height="100%" style="padding: 10px; spacing: 10px;">
+        <label text="Select the files you want to import:" width="100%" />
+
+        <grid columns="2" width="100%" style="spacing: 5px;">
+            <textfield id="jsonPathField" placeholder="Path to stage.json..." width="100%" disabled="true" />
+            <button id="browseJsonButton" text="Browse..." width="80" />
+
+            <textfield id="luaPathField" placeholder="Path to stage.lua..." width="100%" disabled="true" />
+            <button id="browseLuaButton" text="Browse..." width="80" />
+        </grid>
+
+        <button id="convertStageButton" text="Convert to V-Slice" width="100%" style="margin-top: 10px;" disabled="true" />
+    </vbox>
+</window>

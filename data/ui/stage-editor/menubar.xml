@@ -32,6 +32,10 @@
     <menu-item id="stageDataWindow" text="Stage Data" />
   </menu> -->
 
+    <menu text="Converters" width="300">
+        <menu-item id="importPsychJsonButton" text="Import Psych Engine Stage" />
+    </menu>
+
     
     <menu text="View" width="300">
         <menu-item id="resetCamera" text="Set Zoom to Stage Zoom" shortcutText="Ctrl + Shift + R" />
