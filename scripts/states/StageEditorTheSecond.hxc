@@ -215,6 +215,7 @@ class StageEditorTheSecond extends MusicBeatState {
     var characterGridWindow;
     var editPropWindowOffset = 0;
     var editAnimToggle = false;
+    var isEditingCameraOffsets = false;
     var offsetTween:FlxTween;
 
     var editAnimationsWindow;
@@ -238,13 +239,13 @@ class StageEditorTheSecond extends MusicBeatState {
     var cancelInput(get, never):Bool;
     function get_cancelInput():Bool {
         var isMouseOverUI = false;
-        if (stageDataWindow != null && stageDataWindow.exists && stageDataWindow.cameras != null && FlxG.mouse.overlaps(stageDataWindow)) isMouseOverUI = true;
-        if (psychImportWindow != null && psychImportWindow.exists && psychImportWindow.cameras != null && FlxG.mouse.overlaps(psychImportWindow) && psychImportWindow.hidden == false) isMouseOverUI = true;
-        if (editCharacterWindow != null && editCharacterWindow.exists && editCharacterWindow.cameras != null && FlxG.mouse.overlaps(editCharacterWindow)) isMouseOverUI = true;
-        if (editPropWindow != null && editPropWindow.exists && editPropWindow.cameras != null && FlxG.mouse.overlaps(editPropWindow)) isMouseOverUI = true;
-        if (editAnimationsWindow != null && editAnimationsWindow.exists && editAnimationsWindow.cameras != null && FlxG.mouse.overlaps(editAnimationsWindow)) isMouseOverUI = true;
-        if (userGuideWindow != null && userGuideWindow.exists && userGuideWindow.cameras != null && FlxG.mouse.overlaps(userGuideWindow)) isMouseOverUI = true;
-        if (characterGridWindow != null && characterGridWindow.exists && characterGridWindow.cameras != null && FlxG.mouse.overlaps(characterGridWindow)) isMouseOverUI = true;
+        if (stageDataWindow != null && stageDataWindow.exists && !stageDataWindow.hidden && stageDataWindow.cameras != null && FlxG.mouse.overlaps(stageDataWindow)) isMouseOverUI = true;
+        if (psychImportWindow != null && psychImportWindow.exists && !psychImportWindow.hidden && psychImportWindow.cameras != null && FlxG.mouse.overlaps(psychImportWindow)) isMouseOverUI = true;
+        if (editCharacterWindow != null && editCharacterWindow.exists && !editCharacterWindow.hidden && editCharacterWindow.cameras != null && FlxG.mouse.overlaps(editCharacterWindow)) isMouseOverUI = true;
+        if (editPropWindow != null && editPropWindow.exists && !editPropWindow.hidden && editPropWindow.cameras != null && FlxG.mouse.overlaps(editPropWindow)) isMouseOverUI = true;
+        if (editAnimationsWindow != null && editAnimationsWindow.exists && !editAnimationsWindow.hidden && editAnimationsWindow.cameras != null && FlxG.mouse.overlaps(editAnimationsWindow)) isMouseOverUI = true;
+        if (userGuideWindow != null && userGuideWindow.exists && !userGuideWindow.hidden && userGuideWindow.cameras != null && FlxG.mouse.overlaps(userGuideWindow)) isMouseOverUI = true;
+        if (characterGridWindow != null && characterGridWindow.exists && !characterGridWindow.hidden && characterGridWindow.cameras != null && FlxG.mouse.overlaps(characterGridWindow)) isMouseOverUI = true;
         if (menuBar != null && menuBar.exists && menuBar.cameras != null && FlxG.mouse.overlaps(menuBar)) isMouseOverUI = true;
 
         var hasFocus = false;
@@ -1329,16 +1330,6 @@ class StageEditorTheSecond extends MusicBeatState {
             });
 
 
-            var getCharData = ()->{
-                switch (selectedCharacterType) {
-                    case "bf":
-                        return currentStage._data.characters.bf;
-                    case "gf":
-                        return currentStage._data.characters.gf;
-                    case "dad":
-                        return currentStage._data.characters.dad;
-                }
-            }
 
             xPosStepper = editCharacterWindow.findComponent("editCharacterWindowPosStepperX");
             xPosStepper.pos = getCharData().position[0];
@@ -1366,6 +1357,49 @@ class StageEditorTheSecond extends MusicBeatState {
             yCamPosStepper.onChange = ()->{
                 getCharData().cameraOffsets[1] = yCamPosStepper.pos;
                 resetChars();
+            }
+
+            var editCameraOffsetsVisualBtn = editCharacterWindow.findComponent("editCameraOffsetsVisualBtn");
+            if (editCameraOffsetsVisualBtn != null) {
+                editCameraOffsetsVisualBtn.text = isEditingCameraOffsets ? "Apply Offsets" : "Edit Offsets Visually";
+                editCameraOffsetsVisualBtn.onClick = ()->{
+                    isEditingCameraOffsets = true;
+                    if (FocusManager.instance != null) FocusManager.instance.focus = null;
+                    
+                    if (stageDataWindow != null) stageDataWindow.hidden = true;
+                    if (editCharacterWindow != null) editCharacterWindow.hidden = true;
+                    
+                    var applyWindow = RuntimeComponentBuilder.build(Paths.ui("stage-editor/windows/cameraOffsetApplyWindow"));
+                    applyWindow.windowManager = windowManager;
+                    add(applyWindow);
+                    applyWindow.x = FlxG.width - 320;
+                    applyWindow.y = 20;
+                    
+                    var applyBtn = applyWindow.findComponent("applyCameraOffsetsBtn");
+                    applyBtn.onClick = ()->{
+                        isEditingCameraOffsets = false;
+                        remove(applyWindow);
+                        applyWindow.destroy();
+                        
+                        if (stageDataWindow != null) stageDataWindow.hidden = false;
+                        if (editCharacterWindow != null) editCharacterWindow.hidden = false;
+                    };
+
+                    var targetPoint = null;
+                    var offset = null;
+                    switch(selectedCharacterType) {
+                        case "bf": targetPoint = player.cameraFocusPoint; offset = getCharData().cameraOffsets;
+                        case "dad": targetPoint = opponent.cameraFocusPoint; offset = getCharData().cameraOffsets;
+                        case "gf": targetPoint = spectator.cameraFocusPoint; offset = getCharData().cameraOffsets;
+                    }
+                    if (targetPoint != null) {
+                        FlxTween.cancelTweensOf(camGame.scroll);
+                        FlxTween.tween(camGame.scroll, {
+                            x: targetPoint.x - (FlxG.width/2) + offset[0],
+                            y: targetPoint.y - (FlxG.height/2) + offset[1]
+                        }, 0.25, { ease: FlxEase.quartOut });
+                    }
+                };
             }
 
             xScrollPosStepper = editCharacterWindow.findComponent("editCharacterWindowScrollStepperX");
@@ -1559,7 +1593,7 @@ class StageEditorTheSecond extends MusicBeatState {
             }, 0.25, { ease: FlxEase.quartOut });
         }
         menuBar.findComponent("viewFromPlayer").onClick = viewFromPlayerCallback;
-        newKeybind(["THREE"], () -> { if (!cancelInput) viewFromPlayerCallback(); }, "justPressed");
+        newKeybind(["THREE"], () -> { if (!cancelInput && !isEditingCameraOffsets) viewFromPlayerCallback(); }, "justPressed");
 
         var viewFromOpponentCallback = ()->{
             FlxTween.cancelTweensOf(camGame.zoom);
@@ -1572,7 +1606,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         menuBar.findComponent("viewFromOpponent").onClick = viewFromOpponentCallback;
-        newKeybind(["ONE"], () -> { if (!cancelInput) viewFromOpponentCallback(); }, "justPressed");
+        newKeybind(["ONE"], () -> { if (!cancelInput && !isEditingCameraOffsets) viewFromOpponentCallback(); }, "justPressed");
 
         var viewFromSpectatorCallback = ()->{
             FlxTween.cancelTweensOf(camGame.zoom);
@@ -1584,7 +1618,7 @@ class StageEditorTheSecond extends MusicBeatState {
         }
 
         menuBar.findComponent("viewFromSpectator").onClick = viewFromSpectatorCallback;
-        newKeybind(["TWO"], () -> { if (!cancelInput) viewFromSpectatorCallback(); }, "justPressed");
+        newKeybind(["TWO"], () -> { if (!cancelInput && !isEditingCameraOffsets) viewFromSpectatorCallback(); }, "justPressed");
 
         lL = new FunkinSprite().makeGraphic(1, 1, 0xFF086d82);
         lL.cameras = [camInteract];
@@ -1894,7 +1928,61 @@ class StageEditorTheSecond extends MusicBeatState {
             camGame.zoom = 0.01;
         }
 
-        updateTransformTool();
+        if (isEditingCameraOffsets && selectedCharacter != null && !cancelInput) {
+            var camData = getCharData();
+            if (camData != null) {
+                if (FlxG.mouse.justPressed) draggingHandle = "cameraOffset";
+                
+                Cursor.cursorMode = FlxG.mouse.pressed ? CursorMode.Grabbing : CursorMode.Pointer;
+
+                if (FlxG.mouse.pressed) {
+                    camGame.scroll.x -= FlxG.mouse.deltaX / camGame.zoom;
+                    camGame.scroll.y -= FlxG.mouse.deltaY / camGame.zoom;
+                }
+
+                var targetPoint = null;
+                switch(selectedCharacterType) {
+                    case "bf": targetPoint = player.cameraFocusPoint;
+                    case "dad": targetPoint = opponent.cameraFocusPoint;
+                    case "gf": targetPoint = spectator.cameraFocusPoint;
+                }
+
+                if (targetPoint != null) {
+                    camData.cameraOffsets[0] = Math.round(camGame.scroll.x + (FlxG.width/2) - targetPoint.x);
+                    camData.cameraOffsets[1] = Math.round(camGame.scroll.y + (FlxG.height/2) - targetPoint.y);
+                }
+
+                var shiftMulti = FlxG.keys.pressed.SHIFT ? 10 : 1;
+                var changed = false;
+                
+                if (FlxG.keys.justPressed.LEFT) { camGame.scroll.x -= shiftMulti; changed = true; }
+                if (FlxG.keys.justPressed.RIGHT) { camGame.scroll.x += shiftMulti; changed = true; }
+                if (FlxG.keys.justPressed.UP) { camGame.scroll.y -= shiftMulti; changed = true; }
+                if (FlxG.keys.justPressed.DOWN) { camGame.scroll.y += shiftMulti; changed = true; }
+
+                if (FlxG.mouse.pressed || changed) {
+                    if (editCharacterWindow != null) {
+                        var xCamPosStepper = editCharacterWindow.findComponent("charCamOffsetX");
+                        var yCamPosStepper = editCharacterWindow.findComponent("charCamOffsetY");
+                        if (xCamPosStepper != null) xCamPosStepper.pos = camData.cameraOffsets[0];
+                        if (yCamPosStepper != null) yCamPosStepper.pos = camData.cameraOffsets[1];
+                    }
+                    resetChars();
+                    forceUpdateBounds = true;
+                }
+            }
+            if (tLC != null) tLC.alpha = 0.01;
+            if (tRC != null) tRC.alpha = 0.01;
+            if (bLC != null) bLC.alpha = 0.01;
+            if (bRC != null) bRC.alpha = 0.01;
+            if (tMC != null) tMC.alpha = 0.01;
+            if (mLC != null) mLC.alpha = 0.01;
+            if (mRC != null) mRC.alpha = 0.01;
+            if (bMC != null) bMC.alpha = 0.01;
+            if (cC != null) cC.alpha = 0.01;
+        } else {
+            updateTransformTool();
+        }
 
         if (!cancelInput && !FlxG.mouse.overlaps(stageDataWindow) && !FlxG.mouse.overlaps(menuBar)) {
             var scrollSpeed = 700 * elapsed / camGame.zoom;
@@ -1941,7 +2029,9 @@ class StageEditorTheSecond extends MusicBeatState {
             npIndex++;
         }
 
-        if (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) updateTransformTool();
+        if (!isEditingCameraOffsets) {
+            if (selectedProp == null || (!FlxG.mouse.overlaps(selectedProp, camGame) && !usingTransformTool())) updateTransformTool();
+        }
 
         yLine.scale.x = 2 / camGame.zoom;
         yLine.scale.y = FlxG.height * (1/camGame.zoom) * 2;
@@ -2011,7 +2101,7 @@ class StageEditorTheSecond extends MusicBeatState {
 
         if (FlxG.mouse.justReleased) draggingHandle = null;
 
-        if (selectedCharacter != null && !cancelInput) {
+        if (selectedCharacter != null && !cancelInput && !isEditingCameraOffsets) {
             if (FlxG.mouse.overlaps(selectedCharacter, camGame) && FlxG.mouse.justPressed) draggingHandle = "character";
             
             if ((FlxG.mouse.overlaps(selectedCharacter, camGame) && FlxG.mouse.pressed && draggingHandle == null) || (draggingHandle == "character" && FlxG.mouse.pressed)) {
@@ -2464,6 +2554,16 @@ class StageEditorTheSecond extends MusicBeatState {
                 indices.push(Std.parseInt(i));
         }
         return indices;
+    }
+
+    function getCharData() {
+        if (currentStage == null || currentStage._data == null) return null;
+        switch (selectedCharacterType) {
+            case "bf": return currentStage._data.characters.bf;
+            case "gf": return currentStage._data.characters.gf;
+            case "dad": return currentStage._data.characters.dad;
+        }
+        return null;
     }
 
     function resetChars() {

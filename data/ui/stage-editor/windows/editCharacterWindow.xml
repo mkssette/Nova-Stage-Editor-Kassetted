@@ -18,6 +18,8 @@
             <number-stepper id="charCamOffsetX" pos="0" step="1" width="100%" verticalAlign="center"/>
             <number-stepper id="charCamOffsetY" pos="0" step="1" width="100%" verticalAlign="center"/>
         </hbox>
+        <label text="Visual Offset:" style="padding: 2px;" verticalAlign="center"/>
+        <button id="editCameraOffsetsVisualBtn" text="Edit Offsets Visually" width="100%"/>
 
         <label text="Scale:" style="padding: 2px;" verticalAlign="center"/>
         <number-stepper id="editCharacterWindowScaleStepper" min="0" pos="0" step="0.1" width="100%" verticalAlign="center"/>

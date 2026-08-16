@@ -1,0 +1,8 @@
+<window title="Editing Camera Offsets" width="300" maximizable="false" minimizable="false" collapsable="false" closable="false">
+    <vbox width="100%" horizontalAlign="center">
+        <label text="Drag screen to pan camera." style="padding: 2px;" horizontalAlign="center"/>
+        <label text="Arrow keys for precise pixel adjustments." style="padding: 2px;" horizontalAlign="center"/>
+        <spacer height="10"/>
+        <button id="applyCameraOffsetsBtn" text="Apply Offsets" width="100%"/>
+    </vbox>
+</window>
