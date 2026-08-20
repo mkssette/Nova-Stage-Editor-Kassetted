@@ -675,17 +675,17 @@ class StageEditorTheSecond extends MusicBeatState {
                 }
 
                 var xPosStepper = editPropWindow.findComponent("editPropWindowPosStepperX");
-                xPosStepper.pos = Math.round(selectedProp.x);
+                xPosStepper.pos = Math.round(selectedProp.x + (selectedProp.width - selectedProp.frameWidth) / 2);
                 xPosStepper.onChange = ()->{
                     propData.position[0] = xPosStepper.pos;
-                    selectedProp.x = xPosStepper.pos;
+                    selectedProp.x = xPosStepper.pos - (selectedProp.width - selectedProp.frameWidth) / 2;
                 }
 
                 var yPosStepper = editPropWindow.findComponent("editPropWindowPosStepperY");
-                yPosStepper.pos = Math.round(selectedProp.y);
+                yPosStepper.pos = Math.round(selectedProp.y + (selectedProp.height - selectedProp.frameHeight) / 2);
                 yPosStepper.onChange = ()->{
                     propData.position[1] = yPosStepper.pos;
-                    selectedProp.y = yPosStepper.pos;
+                    selectedProp.y = yPosStepper.pos - (selectedProp.height - selectedProp.frameHeight) / 2;
                 }
 
                 var xScrollPosStepper = editPropWindow.findComponent("editPropWindowScrollStepperX");
@@ -2092,8 +2092,8 @@ class StageEditorTheSecond extends MusicBeatState {
         if (selectedProp != null  && !cancelInput) {
             for (i in currentStage._data.props) {
                 if (i.name == selectedProp.name) {
-                    i.position[0] = Math.round(selectedProp.x);
-                    i.position[1] = Math.round(selectedProp.y);
+                    i.position[0] = Math.round(selectedProp.x + (selectedProp.width - selectedProp.frameWidth) / 2);
+                    i.position[1] = Math.round(selectedProp.y + (selectedProp.height - selectedProp.frameHeight) / 2);
                 }
             }
             
@@ -2109,16 +2109,19 @@ class StageEditorTheSecond extends MusicBeatState {
                 selectedCharacter.x += FlxG.mouse.deltaX / camGame.zoom;
                 selectedCharacter.y += FlxG.mouse.deltaY / camGame.zoom;
 
+                var saveX = selectedCharacter.x + selectedCharacter.characterOrigin.x - selectedCharacter.globalOffsets[0];
+                var saveY = selectedCharacter.y + selectedCharacter.characterOrigin.y - selectedCharacter.globalOffsets[1];
+
                 switch (selectedCharacterType) {
                     case "bf":
-                        currentStage._data.characters.bf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
-                        currentStage._data.characters.bf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                        currentStage._data.characters.bf.position[0] = Math.round(saveX);
+                        currentStage._data.characters.bf.position[1] = Math.round(saveY);
                     case "gf":
-                        currentStage._data.characters.gf.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
-                        currentStage._data.characters.gf.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                        currentStage._data.characters.gf.position[0] = Math.round(saveX);
+                        currentStage._data.characters.gf.position[1] = Math.round(saveY);
                     case "dad":
-                        currentStage._data.characters.dad.position[0] = Math.round(selectedCharacter.x) + selectedCharacter.characterOrigin.x;
-                        currentStage._data.characters.dad.position[1] = Math.round(selectedCharacter.y) + selectedCharacter.characterOrigin.y;
+                        currentStage._data.characters.dad.position[0] = Math.round(saveX);
+                        currentStage._data.characters.dad.position[1] = Math.round(saveY);
                 }
             }
         }
@@ -2371,6 +2374,12 @@ class StageEditorTheSecond extends MusicBeatState {
                     draggingHandle = "cC";
                     selectedProp.x += mouseDeltaX;
                     selectedProp.y += mouseDeltaY;
+
+                    var pData = getSelectedPropData();
+                    if (pData != null) {
+                        pData.position[0] = Math.round(selectedProp.x + (selectedProp.width - selectedProp.frameWidth) / 2);
+                        pData.position[1] = Math.round(selectedProp.y + (selectedProp.height - selectedProp.frameHeight) / 2);
+                    }
                 }
                 cC.x = selectedProp.x + (selectedProp.width/2) - (cC.width/2);
                 cC.y = selectedProp.y + (selectedProp.height/2) - (cC.height/2);
@@ -2574,8 +2583,10 @@ class StageEditorTheSecond extends MusicBeatState {
                 player.flipX = !player.flipX;
             player.x = currentStage._data.characters.bf.position[0] - player.characterOrigin.x;
             player.y = currentStage._data.characters.bf.position[1] - player.characterOrigin.y;
-            player.scale.x = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
-            player.scale.y = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
+            var finalScale = player._data.scale * (currentStage._data.characters.bf.scale ?? 1);
+            player.setScale(finalScale);
+            player.originalPosition.set(player.x, player.y);
+            player.resetCameraFocusPoint();
             player.scrollFactor.x = currentStage._data.characters.bf.scroll[0];
             player.scrollFactor.y = currentStage._data.characters.bf.scroll[1];
             player.alpha = currentStage._data.characters.bf.alpha;
@@ -2588,7 +2599,6 @@ class StageEditorTheSecond extends MusicBeatState {
 
             player.playAnimation(player._data.animations[0].name, false, true);
             player.animation.finish();
-            player.updateHitbox();
         }
         if (opponent != null) {
             opponent.zIndex = currentStage._data.characters.dad.zIndex;
@@ -2597,8 +2607,10 @@ class StageEditorTheSecond extends MusicBeatState {
                 opponent.flipX = !opponent.flipX;
             opponent.x = currentStage._data.characters.dad.position[0] - opponent.characterOrigin.x;
             opponent.y = currentStage._data.characters.dad.position[1] - opponent.characterOrigin.y;
-            opponent.scale.x = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
-            opponent.scale.y = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
+            var finalScale = opponent._data.scale * (currentStage._data.characters.dad.scale ?? 1);
+            opponent.setScale(finalScale);
+            opponent.originalPosition.set(opponent.x, opponent.y);
+            opponent.resetCameraFocusPoint();
             opponent.scrollFactor.x = currentStage._data.characters.dad.scroll[0];
             opponent.scrollFactor.y = currentStage._data.characters.dad.scroll[1];
             opponent.alpha = currentStage._data.characters.dad.alpha;
@@ -2611,7 +2623,6 @@ class StageEditorTheSecond extends MusicBeatState {
 
             opponent.playAnimation(opponent._data.animations[0].name, false, true);
             opponent.animation.finish();
-            opponent.updateHitbox();
         }
 
         if (spectator != null) {
@@ -2621,8 +2632,10 @@ class StageEditorTheSecond extends MusicBeatState {
                 spectator.flipX = !spectator.flipX;
             spectator.x = currentStage._data.characters.gf.position[0] - spectator.characterOrigin.x;
             spectator.y = currentStage._data.characters.gf.position[1] - spectator.characterOrigin.y;
-            spectator.scale.x = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
-            spectator.scale.y = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
+            var finalScale = spectator._data.scale * (currentStage._data.characters.gf.scale ?? 1);
+            spectator.setScale(finalScale);
+            spectator.originalPosition.set(spectator.x, spectator.y);
+            spectator.resetCameraFocusPoint();
             spectator.scrollFactor.x = currentStage._data.characters.gf.scroll[0];
             spectator.scrollFactor.y = currentStage._data.characters.gf.scroll[1];
             spectator.alpha = currentStage._data.characters.gf.alpha;
@@ -2633,9 +2646,8 @@ class StageEditorTheSecond extends MusicBeatState {
                 currentStage.add(spectator);
             }
 
-            spectator.playAnimation(spectator._data.animations[0].name);
+            spectator.playAnimation(spectator._data.animations[0].name, false, true);
             spectator.animation.finish();
-            spectator.updateHitbox();
         }
         currentStage.refresh();
     }
